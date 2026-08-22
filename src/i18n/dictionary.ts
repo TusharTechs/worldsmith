@@ -65,7 +65,7 @@ export const en: {
   account: {
     free: string; planSuffix: string; credits: string; creditsLeft: string; goPremium: string; upgrade: string;
     viewProfile: string; manageAccount: string; language: string; signOut: string; login: string; signUp: string;
-    notSignedIn: string; notSignedInSubtitle: string; signIn: string;
+    notSignedIn: string; notSignedInSubtitle: string; signIn: string; renewsOn: string; endsOn: string; billedCycle: string;
   };
   auth: {
     welcomeBack: string; createStudio: string; modalSubtitle: string; continueGoogle: string; or: string;
@@ -385,6 +385,9 @@ export const en: {
     notSignedIn: "You're not signed in",
     notSignedInSubtitle: "Sign in to view your account.",
     signIn: "Sign in",
+    renewsOn: "Renews {date}",
+    endsOn: "Access ends {date}",
+    billedCycle: "Billed {cycle}",
   },
   auth: {
     welcomeBack: "Welcome back",

@@ -50,6 +50,36 @@ export async function ensureUser(uid: string, email: string): Promise<void> {
   }
 }
 
+/**
+ * One billing cycle after `from`, clamped to the end of the target month.
+ *
+ * Plain setMonth(+1) turns 31 January into 3 March, which would show a subscriber a renewal date
+ * that does not exist in their month. Clamping keeps it on the last day instead.
+ */
+export function addCycle(from: number, cycle: string): number {
+  const d = new Date(from);
+  const day = d.getDate();
+  if (cycle === "annual") d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1);
+  if (d.getDate() < day) d.setDate(0); // rolled into the next month — step back to its last day
+  return d.getTime();
+}
+
+/** Plan, cycle and renewal date together, so the UI needs one round trip rather than three. */
+export async function getUserAccount(uid: string): Promise<{
+  credits: number; plan: string; planCycle: string; renewsAt: number | null; subActive: boolean;
+}> {
+  const snap = await userRef(uid).get();
+  const d = snap.exists ? (snap.data() ?? {}) : {};
+  return {
+    credits: d.credits ?? 0,
+    plan: d.plan ?? "free",
+    planCycle: d.planCycle ?? "monthly",
+    renewsAt: typeof d.renewsAt === "number" ? d.renewsAt : null,
+    subActive: d.subActive !== false,
+  };
+}
+
 export async function getUserCredits(uid: string): Promise<number> {
   const snap = await userRef(uid).get();
   return snap.exists ? (snap.data()?.credits ?? 0) : 0;
@@ -231,9 +261,21 @@ export async function updateUserProfile(uid: string, fields: UserProfile): Promi
 }
 
 /** Activate/switch a plan: record subscription state and ADD the cycle's credits (never wipe the wallet). */
-export async function activatePlan(uid: string, plan: string, creditsToAdd: number, cycle?: string): Promise<void> {
+export async function activatePlan(
+  uid: string,
+  plan: string,
+  creditsToAdd: number,
+  cycle?: string,
+  /** Renewal date from the payment provider, when the event carries one. */
+  providerRenewsAt?: number
+): Promise<void> {
+  const startedAt = Date.now();
+  const resolvedCycle = cycle ?? "monthly";
+  // `renewalAt` previously held the activation time despite its name, so it could never be shown
+  // as a renewal date. Prefer the provider's own date; fall back to one cycle from activation.
+  const renewsAt = providerRenewsAt ?? addCycle(startedAt, resolvedCycle);
   await userRef(uid).set(
-    { plan, planCycle: cycle ?? "monthly", subActive: true, renewalAt: Date.now() },
+    { plan, planCycle: resolvedCycle, subActive: true, startedAt, renewsAt },
     { merge: true }
   );
   await grantCredits(uid, creditsToAdd);

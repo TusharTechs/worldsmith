@@ -29,6 +29,7 @@ export default function AccountSettingsPage() {
   const [section, setSection] = useState<Section>("profile");
   const [credits, setCredits] = useState<number | null>(null);
   const [plan, setPlan] = useState<string | undefined>(undefined);
+  const [sub, setSub] = useState<{ cycle: string; renewsAt: number | null; active: boolean } | null>(null);
   const [runs, setRuns] = useState<any[]>([]);
 
   const [name, setName] = useState("");
@@ -244,7 +245,21 @@ export default function AccountSettingsPage() {
               <div className="space-y-5">
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-white">{planLabel}</span>
+                    <div className="min-w-0">
+                      <span className="text-sm text-white">{planLabel}</span>
+                      {/* A paid plan should say when it renews. The free plan has no term, and a
+                          cancelled one keeps access to the end of the period it was paid for. */}
+                      {planKey !== "free" && sub?.renewsAt && (
+                        <p className="mt-0.5 text-[11px] text-zinc-500">
+                          {t(sub.active ? "account.renewsOn" : "account.endsOn", {
+                            date: new Date(sub.renewsAt).toLocaleDateString(undefined, {
+                              year: "numeric", month: "long", day: "numeric",
+                            }),
+                          })}
+                          {sub.active && <> · {t("account.billedCycle", { cycle: sub.cycle })}</>}
+                        </p>
+                      )}
+                    </div>
                     <span className="text-xs text-zinc-400">{credits == null ? <span className="inline-block h-3 w-12 rounded bg-zinc-800 animate-pulse" aria-label="Loading credits" /> : <>{credits} {t("account.creditsLeft")}</>}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
@@ -259,6 +274,7 @@ export default function AccountSettingsPage() {
                     if (!auth.user) return;
                     const acct = await serverGetCredits(await auth.user.getIdToken());
                     setCredits(acct.credits); setPlan(acct.plan);
+                    setSub({ cycle: acct.planCycle, renewsAt: acct.renewsAt, active: acct.subActive });
                   }} />
                 </div>
                 <div>

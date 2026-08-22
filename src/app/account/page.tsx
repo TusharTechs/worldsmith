@@ -52,20 +52,34 @@ export default function AccountPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [creations, setCreations] = useState<any[]>([]);
   const [username, setUsername] = useState<string | undefined>(undefined);
+  // Until this clears, nothing here is known. Rendering the defaults meanwhile told a paying
+  // subscriber they were on the free plan with no projects, which then corrected itself a few
+  // seconds later — the page looked broken, then looked fixed.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.user) { setCredits(null); setPlan(undefined); setProjects([]); setCreations([]); setUsername(undefined); return; }
+    if (!auth.user) {
+      setCredits(null); setPlan(undefined); setProjects([]); setCreations([]); setUsername(undefined);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
     (async () => {
-      const t = await auth.user!.getIdToken();
-      try {
-        const acct = await serverGetCredits(t);
-        setCredits(acct.credits);
-        setPlan(acct.plan);
-      } catch {}
-      try { setUsername((await serverGetProfile(t)).username); } catch {}
-      try { setProjects(await serverListProjects(t)); } catch {}
-      try { setCreations(await serverListToolRuns(t)); } catch {}
+      setLoading(true);
+      const tok = await auth.user!.getIdToken();
+      // These four were awaited one after another, so the page waited for the sum of four round
+      // trips. They do not depend on each other.
+      const [acct, prof, projs, runs] = await Promise.allSettled([
+        serverGetCredits(tok), serverGetProfile(tok), serverListProjects(tok), serverListToolRuns(tok),
+      ]);
+      if (cancelled) return;
+      if (acct.status === "fulfilled") { setCredits(acct.value.credits); setPlan(acct.value.plan); }
+      if (prof.status === "fulfilled") setUsername(prof.value.username);
+      if (projs.status === "fulfilled") setProjects(projs.value);
+      if (runs.status === "fulfilled") setCreations(runs.value);
+      setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [auth.user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const label = auth.user?.displayName ?? auth.user?.email?.split("@")[0] ?? "Account";
@@ -98,12 +112,16 @@ export default function AccountPage() {
               <Avatar photoURL={auth.user.photoURL} label={label} size={80} />
               <div>
                 <h1 className="text-lg text-white truncate">{label}</h1>
-                {handle && <p className="text-xs text-zinc-500 truncate">@{handle}</p>}
+                {loading
+                  ? <span className="mt-1 inline-block h-3 w-24 rounded bg-zinc-800 animate-pulse" />
+                  : handle && <p className="text-xs text-zinc-500 truncate">@{handle}</p>}
               </div>
 
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-400">{planLabel}</span>
+                  <span className="text-zinc-400">{loading
+                    ? <span className="inline-block h-3 w-20 rounded bg-zinc-800 animate-pulse" aria-label="Loading plan" />
+                    : planLabel}</span>
                   <span className="text-zinc-300">{credits == null ? <span className="inline-block h-3 w-12 rounded bg-zinc-800 animate-pulse" aria-label="Loading credits" /> : <>{credits} {t("account.creditsLeft")}</>}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
@@ -139,7 +157,9 @@ export default function AccountPage() {
             <div className="space-y-14 min-w-0">
               <section>
                 <h2 className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Your projects</h2>
-                {projects.length === 0 ? (
+                {loading ? (
+                  <SectionSkeleton rows={3} />
+                ) : projects.length === 0 ? (
                   <EmptyState
                     title="Ready to start your first production?"
                     subtitle="One idea in — a complete production out."
@@ -173,7 +193,9 @@ export default function AccountPage() {
 
               <section>
                 <h2 className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Your creations</h2>
-                {creations.length === 0 ? (
+                {loading ? (
+                  <SectionSkeleton rows={1} />
+                ) : creations.length === 0 ? (
                   <EmptyState
                     title="No creations yet"
                     subtitle="Make your first image, video, or social post — it takes one prompt."
@@ -192,6 +214,17 @@ export default function AccountPage() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Stand-in for a section whose contents are still loading — never an empty state. */
+function SectionSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3" aria-busy="true">
+      {Array.from({ length: rows * 3 }).map((_, i) => (
+        <div key={i} className="h-24 rounded-xl border border-zinc-800/70 bg-zinc-900/40 animate-pulse" />
+      ))}
+    </div>
   );
 }
 

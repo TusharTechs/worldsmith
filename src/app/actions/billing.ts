@@ -1,6 +1,6 @@
 "use server";
 import {
-  verifyUser, ensureUser, getUserCredits, getUserPlan, spendCredits,
+  verifyUser, ensureUser, getUserAccount, spendCredits,
   grantCredits, activatePlan, adminDb, getUserProfile, updateUserProfile, type UserProfile,
   redeemPromoCode, upsertPromoCode, listPromoCodes, type RedeemResult, type PromoCode,
 } from "@/store/credits-store";
@@ -27,10 +27,12 @@ const dodoBase = () =>
 
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-export async function serverGetCredits(idToken: string): Promise<{ credits: number; plan: string }> {
+export async function serverGetCredits(
+  idToken: string
+): Promise<{ credits: number; plan: string; planCycle: string; renewsAt: number | null; subActive: boolean }> {
   const u = await verifyUser(idToken);
   await ensureUser(u.uid, u.email ?? "");
-  return { credits: await getUserCredits(u.uid), plan: await getUserPlan(u.uid) };
+  return getUserAccount(u.uid);
 }
 
 export async function serverSpendCredits(idToken: string, amount: number): Promise<{ ok: boolean; balance: number }> {
@@ -105,7 +107,7 @@ export async function serverUploadProfilePhoto(idToken: string, dataUrl: string)
   return storeImage(Buffer.from(b64, "base64"), mime);
 }
 
-export async function applyPurchaseRule(uid: string, rule: any): Promise<string> {
+export async function applyPurchaseRule(uid: string, rule: any, providerRenewsAt?: number): Promise<string> {
   if (!rule) return "nothing";
   if (rule.type === "pack") {
     const pack = PACKS.find((p) => p.id === rule.pack);
@@ -113,7 +115,7 @@ export async function applyPurchaseRule(uid: string, rule: any): Promise<string>
   } else if (rule.type === "plan") {
     const plan = (PLANS as any)[rule.plan];
     if (plan) {
-      await activatePlan(uid, rule.plan, plan.credits, rule.cycle);
+      await activatePlan(uid, rule.plan, plan.credits, rule.cycle, providerRenewsAt);
       return `${plan.name} plan active (+${plan.credits} credits)`;
     }
   }

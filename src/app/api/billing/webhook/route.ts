@@ -137,7 +137,14 @@ export async function POST(req: NextRequest) {
 
     if (won && uid) {
       await ensureUser(uid, email);
-      await applyPurchaseRule(uid, rule);
+      // Dodo's own next-billing date when the event carries one, so the renewal shown to the
+      // subscriber matches what they will actually be charged on rather than our arithmetic.
+      // Field naming varies by event shape, so try the plausible ones and fall back to computing.
+      const providerRenews = [
+        d?.next_billing_date, d?.next_billing_at, d?.current_period_end, d?.subscription?.next_billing_date,
+      ].map((v) => (typeof v === "number" ? (v > 1e12 ? v : v * 1000) : v ? Date.parse(String(v)) : NaN))
+       .find((n) => Number.isFinite(n) && n > Date.now());
+      await applyPurchaseRule(uid, rule, providerRenews);
     }
     return NextResponse.json({ ok: true });
   } catch (e) {

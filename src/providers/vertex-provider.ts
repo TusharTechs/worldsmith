@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
@@ -56,6 +57,20 @@ function parseInlineCredentials(): Record<string, unknown> | undefined {
     console.error("[VERTEX] service-account JSON in the environment is not valid JSON — ignoring it.");
     return undefined;
   }
+}
+
+/**
+ * The service account itself, from wherever it is available.
+ *
+ * Inline JSON first, then the file on disk. Anything needing admin credentials — Firestore, Auth,
+ * the billing webhook — must go through this rather than reading the path directly, or it works
+ * locally and throws on a host that has no filesystem to read.
+ */
+export function resolveServiceAccount(): Record<string, unknown> {
+  const inline = parseInlineCredentials();
+  if (inline) return inline;
+  const cfg = resolveVertexConfig();
+  return JSON.parse(fs.readFileSync(cfg.serviceAccountPath, "utf8"));
 }
 
 export function resolveVertexConfig(): VertexConfig {

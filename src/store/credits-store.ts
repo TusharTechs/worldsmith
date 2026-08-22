@@ -1,8 +1,7 @@
-import fs from "fs";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { initializeFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import { resolveVertexConfig } from "@/providers/vertex-provider";
+import { resolveVertexConfig, resolveServiceAccount } from "@/providers/vertex-provider";
 import { FREE_TRIAL_CREDITS } from "@/core/credits";
 
 const APP_NAME = "worldsmith-credits-v2";
@@ -11,7 +10,7 @@ function adminApp() {
   const existing = getApps().find((a) => a.name === APP_NAME);
   if (existing) return existing;
   const cfg = resolveVertexConfig();
-  const sa = JSON.parse(fs.readFileSync(cfg.serviceAccountPath, "utf8"));
+  const sa = resolveServiceAccount();
   return initializeApp(
     {
       credential: cert(sa),

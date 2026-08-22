@@ -25,6 +25,10 @@ export default function PromoAdminPage() {
   const [note, setNote] = useState("");
 
   const load = async () => {
+    // Firebase restores the session asynchronously, so auth.user is null on the first render even
+    // for a signed-in owner. Treating that as "not the owner" showed the owner an access-denied
+    // notice that corrected itself seconds later. Undecided must stay undecided.
+    if (auth.loading) { setOwner(null); return; }
     if (!auth.user) { setOwner(false); return; }
     const tok = await auth.user.getIdToken();
     try { setCredits((await serverGetCredits(tok)).credits); } catch {}
@@ -35,7 +39,7 @@ export default function PromoAdminPage() {
     } catch { setOwner(false); }
   };
 
-  useEffect(() => { load(); }, [auth.user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [auth.user?.uid, auth.loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const create = async (preset?: { code: string; credits: number; note: string }) => {
     if (!auth.user) return;
@@ -81,7 +85,7 @@ export default function PromoAdminPage() {
             <div>
               <p className="text-sm text-amber-300">Owner access only</p>
               <p className="mt-1 text-xs text-zinc-400">
-                This page is limited to the account set as <span className="font-mono">LEGACY_OWNER_EMAIL</span>.
+                This page is limited to the account set as <span className="font-mono">OWNER_EMAIL</span>.
                 Sign in with that account to manage codes.
               </p>
             </div>

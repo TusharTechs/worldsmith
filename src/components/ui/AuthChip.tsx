@@ -13,7 +13,11 @@ export function AuthChip({ credits, plan, renewsAt }: { credits?: number | null;
   const { t } = useLanguage();
   return (
     <div className="flex items-center gap-2 shrink-0">
-      {auth.user ? (
+      {/* While auth restores, show neither state: flashing Login/Sign up at someone who is
+          already signed in is the same mistake as any other premature answer. */}
+      {auth.loading ? (
+        <span className="h-9 w-9 animate-pulse rounded-full bg-zinc-800" aria-label="Loading account" />
+      ) : auth.user ? (
         <AccountMenu credits={credits} plan={plan} renewsAt={renewsAt} />
       ) : (
         <>

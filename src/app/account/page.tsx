@@ -94,7 +94,13 @@ export default function AccountPage() {
     <main className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
       <SiteHeader credits={credits} plan={plan} />
       <div className="max-w-5xl mx-auto px-6 pt-28 pb-24">
-        {!auth.user ? (
+        {auth.loading ? (
+          // Auth restores asynchronously; announcing "not signed in" before it settles told a
+          // signed-in user they were signed out, then corrected itself.
+          <div className="py-24 text-center" aria-busy="true">
+            <span className="inline-block h-4 w-40 animate-pulse rounded bg-zinc-800" />
+          </div>
+        ) : !auth.user ? (
           <div className="text-center space-y-4 py-24">
             <h1 className="text-2xl font-light text-white">{t("account.notSignedIn")}</h1>
             <p className="text-sm text-zinc-500">{t("account.notSignedInSubtitle")}</p>

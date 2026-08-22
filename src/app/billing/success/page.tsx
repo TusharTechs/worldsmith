@@ -56,7 +56,8 @@ export default function BillingSuccess() {
     })();
   }, [auth.user]);
 
-  const working = auth.user != null && phase.kind === "working";
+  // Auth still restoring counts as working, not as signed out.
+  const working = auth.loading || (auth.user != null && phase.kind === "working");
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 font-sans flex items-center justify-center p-6">
@@ -79,7 +80,8 @@ export default function BillingSuccess() {
                   {phase.kind === "attention" ? t("billingSuccess.attentionTitle") : t("billingSuccess.title")}
                 </h1>
                 <p className="text-sm text-zinc-400 max-w-sm">
-                  {!auth.user ? t("billingSuccess.signInToAttach")
+                  {auth.loading ? t("billingSuccess.applyingNote")
+                    : !auth.user ? t("billingSuccess.signInToAttach")
                     : phase.kind === "working" ? t("billingSuccess.applyingNote")
                     : phase.kind === "attention" ? t("billingSuccess.attentionBody")
                     : null}
@@ -119,7 +121,7 @@ export default function BillingSuccess() {
               </details>
             )}
 
-            {!auth.user ? (
+            {!auth.loading && !auth.user ? (
               <button
                 onClick={() => auth.openAuth()}
                 className="w-full py-3 ws-gradient-bg text-black text-xs font-semibold uppercase tracking-widest rounded-lg hover:brightness-110 transition-all"

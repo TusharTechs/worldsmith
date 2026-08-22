@@ -50,6 +50,8 @@ export default function AccountSettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to settle before concluding anything about the user.
+    if (auth.loading) return;
     if (!auth.user) { setLoading(false); return; }
     let cancelled = false;
     setName(auth.user.displayName ?? "");
@@ -79,7 +81,7 @@ export default function AccountSettingsPage() {
       setLoading(prof.status !== "fulfilled");
     })();
     return () => { cancelled = true; };
-  }, [auth.user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [auth.user?.uid, auth.loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Downscale to a small square JPEG before it ever leaves the browser — an original photo's
   // data URL can be several MB, which is too large for a Server Action argument (Next.js's
@@ -153,6 +155,17 @@ export default function AccountSettingsPage() {
   const cap = PLAN_CAP[planKey] ?? FREE_TRIAL_CREDITS;
   const pct = credits != null ? Math.min(100, Math.max(4, Math.round((credits / cap) * 100))) : 0;
   const fileRef = useRef<HTMLInputElement>(null);
+
+  if (auth.loading) {
+    return (
+      <main className="min-h-screen bg-zinc-950 font-sans text-zinc-100">
+        <SiteHeader credits={credits} plan={plan} renewsAt={sub?.renewsAt} />
+        <div className="mx-auto max-w-5xl px-6 pb-24 pt-28" aria-busy="true">
+          <span className="inline-block h-4 w-40 animate-pulse rounded bg-zinc-800" />
+        </div>
+      </main>
+    );
+  }
 
   if (!auth.user) {
     return (

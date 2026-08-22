@@ -73,7 +73,8 @@ export const en: {
     newHere: string; createAccountLink: string; alreadyHaveAccount: string;
     errors: {
       wrongPassword: string; emailInUse: string; weakPassword: string; invalidEmail: string; popupClosed: string;
-      unauthorizedDomain: string; operationNotAllowed: string; generic: string;
+      unauthorizedDomain: string; operationNotAllowed: string; popupBlocked: string;
+      networkFailed: string; configProblem: string; generic: string;
     };
   };
   billingSuccess: { title: string; applying: string; signInToAttach: string; signInToClaim: string; openStudio: string; toolbox: string; home: string };
@@ -404,6 +405,9 @@ export const en: {
       popupClosed: "Google sign-in was cancelled.",
       unauthorizedDomain: "Add this domain to Firebase Auth → Authorized domains.",
       operationNotAllowed: "Enable this sign-in method in Firebase Console → Authentication.",
+      popupBlocked: "Your browser blocked the sign-in window — allow popups and try again.",
+      networkFailed: "Couldn't reach the sign-in service. Check your connection and try again.",
+      configProblem: "Sign-in is misconfigured for this site. Please let us know.",
       generic: "Sign-in failed. Try again.",
     },
   },

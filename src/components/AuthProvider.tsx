@@ -189,7 +189,17 @@ function friendly(code: string | undefined, t: (path: string) => string): string
     case "auth/cancelled-popup-request": return t("auth.errors.popupClosed");
     case "auth/unauthorized-domain": return t("auth.errors.unauthorizedDomain");
     case "auth/operation-not-allowed": return t("auth.errors.operationNotAllowed");
-    default: return t("auth.errors.generic");
+    case "auth/popup-blocked": return t("auth.errors.popupBlocked");
+    case "auth/network-request-failed": return t("auth.errors.networkFailed");
+    case "auth/internal-error": return t("auth.errors.configProblem");
+    case "auth/api-key-not-valid":
+    case "auth/invalid-api-key": return t("auth.errors.configProblem");
+    default:
+      // The message shown to a user is deliberately vague, but swallowing the code entirely means
+      // nobody — including whoever is debugging a deployment — can tell an unauthorized domain
+      // from a blocked popup from a bad key. The code goes to the console so it is recoverable.
+      console.error("[AUTH] sign-in failed with unmapped code:", code);
+      return t("auth.errors.generic");
   }
 }
 

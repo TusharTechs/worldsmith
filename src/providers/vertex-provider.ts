@@ -70,7 +70,18 @@ export function resolveServiceAccount(): Record<string, unknown> {
   const inline = parseInlineCredentials();
   if (inline) return inline;
   const cfg = resolveVertexConfig();
-  return JSON.parse(fs.readFileSync(cfg.serviceAccountPath, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(cfg.serviceAccountPath, "utf8"));
+  } catch (e) {
+    // Missing credentials surface as an ENOENT deep inside firebase-admin, which reaches the
+    // browser as a blank 500 and a minified React error — every route that touches Auth or
+    // Firestore fails at once with nothing naming the cause. Say what is actually wrong.
+    throw new Error(
+      "No Firebase/Vertex service account available. Set VERTEX_SERVICE_ACCOUNT_JSON (or " +
+      "FIREBASE_SERVICE_ACCOUNT_JSON) to the service-account JSON on hosts with no filesystem, " +
+      `or provide the file at ${cfg.serviceAccountPath} locally. Underlying error: ${(e as Error).message}`
+    );
+  }
 }
 
 export function resolveVertexConfig(): VertexConfig {

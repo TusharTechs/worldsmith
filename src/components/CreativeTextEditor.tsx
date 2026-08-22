@@ -217,19 +217,17 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
     if (!dragRef.current) return;
     const p = toNorm(e);
     const { id, dx, dy } = dragRef.current;
-    const ctx = canvasRef.current?.getContext("2d");
     setLayers((ls) => ls.map((l) => {
       if (l.id !== id) return l;
-      // Clamp the block, not its centre. Clamping the centre to 0..1 let a headline be dragged
-      // until half of it hung outside the canvas — and off the exported image with it.
-      let halfW = 0, halfH = 0;
-      if (ctx) {
-        const m = layerMetrics(ctx, l, previewH);
-        halfW = m.width / 2 / PREVIEW_W;
-        halfH = m.height / 2 / previewH;
-      }
-      const fit = (v: number, half: number) => (half * 2 >= 1 ? 0.5 : Math.min(1 - half, Math.max(half, v)));
-      return { ...l, x: fit(p.x - dx, halfW), y: fit(p.y - dy, halfH) };
+      // Clamp the anchor to the canvas and nothing more.
+      //
+      // Keeping the whole block inside sounded safer but made the tool worse: a headline half the
+      // canvas wide could then only sit in the middle half of it, so dragging toward a corner slid
+      // along an invisible wall instead of following the cursor. Deliberately bleeding type off an
+      // edge is also normal design work. The anchor staying on the canvas is enough to guarantee
+      // the layer remains visible and can always be dragged back.
+      const clamp = (v: number) => Math.min(1, Math.max(0, v));
+      return { ...l, x: clamp(p.x - dx), y: clamp(p.y - dy) };
     }));
   };
 

@@ -66,7 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInGoogle = useCallback(async () => {
     const auth = getAuth(firebaseApp());
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    // Always show the account chooser. Without this Google silently reuses whichever session the
+    // browser already has, so anyone signed into both a work and a personal account gets whichever
+    // one Google picks — with no indication that a choice was made on their behalf.
+    provider.setCustomParameters({ prompt: "select_account" });
+    await signInWithPopup(auth, provider);
     setModalOpen(false);
   }, []);
 

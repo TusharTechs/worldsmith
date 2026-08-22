@@ -1,0 +1,10 @@
+# Local generation output — hundreds of MB of images, video and audio that the
+# deployed app never reads. Assets in production live in Firebase Storage.
+.data
+
+# Committed only so GitHub renders the README.
+docs
+
+# Local credentials, never deployed. Serverless hosts get the service account
+# through VERTEX_SERVICE_ACCOUNT_JSON instead.
+firebase-service-account.json

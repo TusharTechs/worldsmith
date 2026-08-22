@@ -39,6 +39,33 @@ export async function fetchReferenceBytes(ref: string): Promise<Buffer | null> {
   }
 }
 
+/**
+ * Last-resort local write, used when Storage is unavailable.
+ *
+ * On a serverless host the working directory is read-only, so this throws EROFS — a cryptic
+ * failure for what is really a missing piece of project setup. Storage being unreachable is the
+ * actual problem; say so, because silently succeeding is not an option here and the raw errno
+ * sends people looking in the wrong place.
+ */
+function writeLocalAsset(kind: "images" | "videos" | "audio", id: string, ext: string, bytes: Buffer): string {
+  const dir = path.join(process.cwd(), ".data", kind);
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${id}.${ext}`), bytes);
+  } catch (e) {
+    const errno = (e as NodeJS.ErrnoException).code;
+    if (errno === "EROFS" || errno === "EACCES" || errno === "EPERM") {
+      throw new Error(
+        "Cannot store generated media. Firebase Storage is not reachable, and this host has a " +
+        "read-only filesystem to fall back to. Enable Storage for the project and set " +
+        `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET to a bucket that exists. (${errno})`
+      );
+    }
+    throw e;
+  }
+  return `/api/assets/${kind}/${id}`;
+}
+
 export async function storeImage(bytes: Buffer, mimeType: string): Promise<string> {
   const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   if (isAdminConfigured() && !storageBroken) {
@@ -57,10 +84,7 @@ export async function storeImage(bytes: Buffer, mimeType: string): Promise<strin
       handleUploadError(e, "image");
     }
   }
-  const dir = path.join(process.cwd(), ".data", "images");
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${id}.png`), bytes);
-  return `/api/assets/images/${id}`;
+  return writeLocalAsset("images", id, "png", bytes);
 }
 
 export async function storeVideo(bytes: Buffer): Promise<string> {
@@ -77,10 +101,7 @@ export async function storeVideo(bytes: Buffer): Promise<string> {
       handleUploadError(e, "video");
     }
   }
-  const dir = path.join(process.cwd(), ".data", "videos");
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${id}.mp4`), bytes);
-  return `/api/assets/videos/${id}`;
+  return writeLocalAsset("videos", id, "mp4", bytes);
 }
 
 /**
@@ -128,10 +149,7 @@ export async function storeAudio(bytes: Buffer, mimeType: string, ext: string): 
       handleUploadError(e, "audio");
     }
   }
-  const dir = path.join(process.cwd(), ".data", "audio");
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${id}.${ext}`), bytes);
-  return `/api/assets/audio/${id}`;
+  return writeLocalAsset("audio", id, ext, bytes);
 }
 
 

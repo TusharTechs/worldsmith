@@ -9,7 +9,6 @@ import { sendEmailVerification } from "firebase/auth";
 import { Modal, ModalHeader } from "@/components/ui/Modal";
 import { PACKS } from "@/core/credits";
 import type { Dictionary } from "@/i18n/dictionary";
-import { AuthChip } from "@/components/ui/AuthChip";
 import { SiteHeader } from "@/components/SiteHeader";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { Card } from "@/components/ui/Card";
@@ -418,7 +417,10 @@ export default function Landing() {
                 <p className="text-zinc-400 mt-3">{t("home.pricing.subtitle")}</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest flex-wrap">
-                {acct && <AuthChip credits={acct.credits} plan={acct.plan} />}
+                {/* No account chip here. The fixed header already carries one, and a second
+                    dropdown anchored inside this row opened over the plan cards and ran off the
+                    edge of the viewport. Which plan you are on is already shown by the ACTIVE
+                    badge and the CURRENT PLAN button on the cards themselves. */}
                 <span className={!annual ? "text-white" : "text-zinc-500"}>{t("home.pricing.monthly")}</span>
                 <button onClick={() => setAnnual(!annual)} className={`w-12 h-6 rounded-full relative transition-colors ${annual ? "ws-gradient-bg" : "bg-zinc-700"}`}>
                   <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${annual ? "left-6" : "left-0.5"}`} />

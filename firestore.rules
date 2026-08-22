@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Security net for the browser (client SDK) path. Server actions use the Firebase Admin SDK,
+// which authenticates as a service account and bypasses these rules entirely — this file only
+// constrains what a signed-in user's own browser session can read/write directly.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /projects/{projectId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+
+      match /assets/{assetId} {
+        allow read, write: if request.auth != null
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // Credits/plan balance: a user may read their own doc; balance mutations only ever
+    // happen server-side (Admin SDK, transactional) in src/store/credits-store.ts.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Payment records and checkout intents are written only by the webhook/server actions.
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
+    match /checkoutIntents/{id} {
+      allow read, write: if false;
+    }
+
+    // Per-user Toolbox run history: a user may read their own runs; writes are server-only.
+    match /toolRuns/{runId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}

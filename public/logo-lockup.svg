@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 100" width="460" height="100">
+  <title>Worldsmith</title>
+  <defs>
+    <linearGradient id="gm" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#e879f9"/>
+    </linearGradient>
+    <linearGradient id="gt" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#f0abfc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- mark, scaled to cap-height and left-aligned -->
+  <g transform="translate(0 6) scale(0.86)">
+    <path d="M85.95 32.47 A40 40 0 1 1 63.68 12.41 L61.23 23.54 A25 25 0 1 0 75.15 36.07 Z" fill="url(#gm)"/>
+    <path d="M92.12 3.21 L89.82 13.25 L80.08 16.59 L82.38 6.55 Z" fill="url(#gm)"/>
+  </g>
+
+  <!-- wordmark: WORLD in light zinc, SMITH in the brand gradient -->
+  <text x="108" y="66" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif"
+        font-size="46" letter-spacing="4.6">
+    <tspan fill="#a1a1aa" font-weight="300">WORLD</tspan><tspan fill="url(#gt)" font-weight="600">SMITH</tspan>
+  </text>
+</svg>

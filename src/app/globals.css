@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Space Grotesk everywhere `font-sans` is used — one deliberate typographic voice
+     instead of the system default, loaded once in layout.tsx. */
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Signature duotone: every "primary" surface in the product pulls from this pair
+     instead of picking cyan or fuchsia ad hoc per page. */
+  --color-signal-500: #22d3ee;
+  --color-signal-400: #67e8f9;
+  --color-pulse-500: #e879f9;
+  --color-pulse-400: #f0abfc;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #09090b; /* zinc-950 */
+  color: #fafafa;
+  font-family: var(--font-sans);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #18181b; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+::selection { background: rgba(34, 211, 238, 0.35); color: #fff; }
+
+/* ---------- Motion ---------- */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.6s ease both; }
+
+/* Slow-drifting radial mesh — the one unmistakable signature element. Animates `transform`
+   only (never background-position, which forces a repaint every frame instead of just a
+   compositor recomposite) — the layer is oversized so the drift never reveals its edges. */
+@keyframes meshDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-3%, 2%, 0) scale(1.04); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.ws-mesh {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    radial-gradient(38% 45% at 15% 20%, color-mix(in srgb, var(--color-signal-500) 22%, transparent), transparent 70%),
+    radial-gradient(45% 50% at 85% 15%, color-mix(in srgb, var(--color-pulse-500) 20%, transparent), transparent 70%),
+    radial-gradient(50% 55% at 50% 100%, color-mix(in srgb, var(--color-signal-500) 14%, transparent), transparent 70%);
+  background-repeat: no-repeat;
+  animation: meshDrift 24s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-mesh { animation: none; }
+}
+
+/* Subtle film grain — sits above the mesh, keeps big flat gradients from looking cheap. */
+.ws-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+/* Signature gradient text/surfaces — the one recurring "brand" gradient. */
+.ws-gradient-text {
+  background-image: linear-gradient(90deg, var(--color-signal-400), var(--color-pulse-400));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.ws-gradient-bg {
+  background-image: linear-gradient(90deg, var(--color-signal-500), var(--color-pulse-500));
+}
+.ws-gradient-ring {
+  border-image: linear-gradient(90deg, var(--color-signal-500), var(--color-pulse-500)) 1;
+}
+
+/* Skeleton loading (replaces bare "Generating..." text with a shape-aware placeholder). */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.ws-skeleton {
+  background: linear-gradient(90deg, #18181b 25%, #27272a 37%, #18181b 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Marquee — used for the auto-scrolling showcase strip on the landing page. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ws-marquee-track {
+  animation: marquee 34s linear infinite;
+  will-change: transform;
+}
+.ws-marquee-row:hover .ws-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-marquee-track { animation: none; }
 }

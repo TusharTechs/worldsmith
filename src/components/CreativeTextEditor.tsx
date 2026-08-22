@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TextLayer, TEXTKIT_FONTS, TEXTKIT_PRESETS, renderLayers, layerMetrics, defaultLayer } from "@/core/textkit";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { X } from "lucide-react";
 
 interface Props {
   imageUri: string;
@@ -205,7 +206,7 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
       setSelectedId(hit.id);
       setCaretPos(hit.text.length); // caret starts at end, like clicking a filled input
       dragRef.current = { id: hit.id, dx: p.x - hit.x, dy: p.y - hit.y };
-      (e.target as Element).setPointerCapture(e.pointerId);
+      e.currentTarget.setPointerCapture(e.pointerId);
       (document.activeElement as HTMLElement | null)?.blur?.();
     } else {
       setSelectedId(null);
@@ -216,12 +217,32 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
     if (!dragRef.current) return;
     const p = toNorm(e);
     const { id, dx, dy } = dragRef.current;
-    setLayers((ls) => ls.map((l) =>
-      l.id === id ? { ...l, x: Math.min(1, Math.max(0, p.x - dx)), y: Math.min(1, Math.max(0, p.y - dy)) } : l
-    ));
+    const ctx = canvasRef.current?.getContext("2d");
+    setLayers((ls) => ls.map((l) => {
+      if (l.id !== id) return l;
+      // Clamp the block, not its centre. Clamping the centre to 0..1 let a headline be dragged
+      // until half of it hung outside the canvas — and off the exported image with it.
+      let halfW = 0, halfH = 0;
+      if (ctx) {
+        const m = layerMetrics(ctx, l, previewH);
+        halfW = m.width / 2 / PREVIEW_W;
+        halfH = m.height / 2 / previewH;
+      }
+      const fit = (v: number, half: number) => (half * 2 >= 1 ? 0.5 : Math.min(1 - half, Math.max(half, v)));
+      return { ...l, x: fit(p.x - dx, halfW), y: fit(p.y - dy, halfH) };
+    }));
   };
 
-  const onPointerUp = () => { dragRef.current = null; };
+  // A drag must end on anything that ends a drag. Only listening for pointerup left the layer
+  // stuck to the cursor whenever the pointer was cancelled or capture was lost — releasing
+  // outside the window, a touch interruption, a browser gesture — with no button held down.
+  const endDrag = (e?: React.PointerEvent) => {
+    dragRef.current = null;
+    if (e) {
+      const el = e.currentTarget as Element;
+      if (el.hasPointerCapture?.(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    }
+  };
 
   const update = (patch: Partial<TextLayer>) => {
     if (!selectedId) return;
@@ -249,30 +270,38 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6">
-      <div className="flex gap-6 max-w-6xl w-full">
-        <div className="flex-1 min-w-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 sm:p-6">
+      <div className="flex w-full max-w-6xl flex-col gap-4 lg:flex-row lg:gap-6">
+        <div className="min-w-0 flex-1">
           <canvas
             ref={canvasRef}
             className="w-full rounded border border-zinc-700 bg-zinc-950 touch-none cursor-move"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onLostPointerCapture={() => { dragRef.current = null; }}
           />
           <p className="text-[10px] font-mono text-zinc-500 mt-2">
             Click text, type directly · ← → move caret · Home/End · Enter = new line · Backspace deletes · drag to move · exports at {exportWidth}×{exportHeight}
           </p>
         </div>
 
-        <div className="w-80 shrink-0 overflow-y-auto max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded p-4 space-y-3">
-          <div className="flex justify-between items-center">
+        <div className="w-full shrink-0 space-y-3 overflow-y-auto rounded-xl border border-white/[0.09] bg-zinc-900 p-4 lg:max-h-[85vh] lg:w-80">
+          <div className="flex items-center justify-between">
             <h3 className="text-xs uppercase tracking-widest text-cyan-400">TextKit</h3>
-            <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xs">✕</button>
+            <button
+              onClick={onClose}
+              aria-label="Close editor"
+              className="-mr-1 flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-200"
+            >
+              <X size={14} />
+            </button>
           </div>
 
           <button
             onClick={() => { const l = defaultLayer(); setLayers((ls) => [...ls, l]); setSelectedId(l.id); setCaretPos(l.text.length); }}
-            className="w-full py-2 bg-cyan-500 text-black font-semibold rounded text-xs uppercase tracking-widest hover:bg-cyan-400"
+            className="w-full rounded-lg py-2.5 ws-gradient-bg text-xs font-semibold uppercase tracking-widest text-black transition-all hover:brightness-110"
           >
             + Add Text
           </button>

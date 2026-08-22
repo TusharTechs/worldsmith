@@ -44,26 +44,41 @@ export default function AccountSettingsPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [claimMsg, setClaimMsg] = useState<string | null>(null);
 
+  // Until the profile has arrived, the fields hold "" — which is indistinguishable from a user
+  // who has cleared them. Saving in that window wrote those empties over a real username,
+  // headline and bio, so the form stays disabled until there is something true in it.
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!auth.user) return;
+    if (!auth.user) { setLoading(false); return; }
+    let cancelled = false;
     setName(auth.user.displayName ?? "");
     setPhotoPreview(auth.user.photoURL ?? null);
     (async () => {
+      setLoading(true);
       const tok = await auth.user!.getIdToken();
-      try {
-        const acct = await serverGetCredits(tok);
-        setCredits(acct.credits);
-        setPlan(acct.plan);
-      } catch {}
-      try {
-        const p = await serverGetProfile(tok);
-        setUsername(p.username ?? "");
-        setHeadline(p.headline ?? "");
-        setBio(p.bio ?? "");
-      } catch {}
-      try { setRuns(await serverListToolRuns(tok)); } catch {}
-      try { setIsOwner(await serverIsOwner(tok)); } catch {}
+      // Four independent reads, previously awaited one after another.
+      const [acct, prof, runsRes, owner] = await Promise.allSettled([
+        serverGetCredits(tok), serverGetProfile(tok), serverListToolRuns(tok), serverIsOwner(tok),
+      ]);
+      if (cancelled) return;
+      if (acct.status === "fulfilled") {
+        setCredits(acct.value.credits);
+        setPlan(acct.value.plan);
+        setSub({ cycle: acct.value.planCycle, renewsAt: acct.value.renewsAt, active: acct.value.subActive });
+      }
+      if (prof.status === "fulfilled") {
+        setUsername(prof.value.username ?? "");
+        setHeadline(prof.value.headline ?? "");
+        setBio(prof.value.bio ?? "");
+      }
+      if (runsRes.status === "fulfilled") setRuns(runsRes.value);
+      if (owner.status === "fulfilled") setIsOwner(owner.value);
+      // Only allow editing once the profile read has actually resolved — a failed read must not
+      // unlock a form whose fields would then overwrite the server's values with blanks.
+      setLoading(prof.status !== "fulfilled");
     })();
+    return () => { cancelled = true; };
   }, [auth.user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Downscale to a small square JPEG before it ever leaves the browser — an original photo's
@@ -102,7 +117,7 @@ export default function AccountSettingsPage() {
   };
 
   const save = async () => {
-    if (!auth.user) return;
+    if (!auth.user || loading) return; // never write the empty initial state over a real profile
     setSaving(true); setSaved(false); setSaveError(null);
     try {
       const tok = await auth.user.getIdToken();
@@ -207,33 +222,37 @@ export default function AccountSettingsPage() {
 
                 <Field label="Name">
                   <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-700" />
+                    disabled={loading}
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm focus:border-cyan-700 focus:outline-none disabled:animate-pulse disabled:border-zinc-800/60 disabled:bg-zinc-900/60 disabled:text-transparent disabled:placeholder-transparent" />
                 </Field>
 
                 <Field label="Username">
                   <input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                     placeholder="username"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-700" />
+                    disabled={loading}
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm focus:border-cyan-700 focus:outline-none disabled:animate-pulse disabled:border-zinc-800/60 disabled:bg-zinc-900/60 disabled:text-transparent disabled:placeholder-transparent" />
                 </Field>
 
                 <Field label="Headline">
                   <input value={headline} onChange={(e) => setHeadline(e.target.value.slice(0, 60))} placeholder="Examples: Film Director, Film Creator"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-700" />
+                    disabled={loading}
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm focus:border-cyan-700 focus:outline-none disabled:animate-pulse disabled:border-zinc-800/60 disabled:bg-zinc-900/60 disabled:text-transparent disabled:placeholder-transparent" />
                 </Field>
 
                 <Field label="Bio">
                   <textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 300))} rows={4} placeholder="Type bio text here"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-cyan-700" />
+                    disabled={loading}
+                    className="w-full resize-none rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm focus:border-cyan-700 focus:outline-none disabled:animate-pulse disabled:border-zinc-800/60 disabled:bg-zinc-900/60 disabled:text-transparent disabled:placeholder-transparent" />
                   <p className="text-right text-[10px] text-zinc-600 mt-1">{bio.length} / 300</p>
                 </Field>
 
                 <div className="flex items-center gap-3">
                   <button
                     onClick={save}
-                    disabled={saving}
+                    disabled={saving || loading}
                     className="px-6 py-3 ws-gradient-bg text-black font-semibold text-xs uppercase tracking-widest rounded hover:brightness-110 transition-all disabled:opacity-50"
                   >
-                    {saving ? "Saving…" : "Save changes"}
+                    {loading ? "Loading…" : saving ? "Saving…" : "Save changes"}
                   </button>
                   {saved && <span className="text-xs text-emerald-400">Saved</span>}
                   {saveError && <span className="text-xs text-red-400">{saveError}</span>}

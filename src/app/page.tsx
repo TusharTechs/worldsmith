@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { WorldsmithMark } from "@/components/ui/Logo";
 import { RedeemCode } from "@/components/ui/RedeemCode";
-import { Gift, CheckCircle2, MailWarning, SearchX } from "lucide-react";
+import { Gift, CheckCircle2, MailWarning, SearchX, Check, Minus, ChevronDown } from "lucide-react";
 
 // Matches home.exploreMore.tags index-for-index (dictionary.ts) — each tag deep-links to its
 // actual tool/platform page instead of the generic /tools index.
@@ -382,23 +382,41 @@ export default function Landing() {
       <section className="max-w-6xl mx-auto px-6 py-28">
         <Reveal>
           <h2 className="text-3xl font-light tracking-tight">{t("home.vs.heading")}</h2>
+          <p className="mt-3 max-w-xl text-sm text-zinc-400">{t("home.vs.caption")}</p>
         </Reveal>
         <Reveal delay={100}>
+          {/* The Worldsmith column carries a tinted rail down the whole table so the comparison
+              reads before a single row does. Marks are icons rather than ✓/✗ glyphs, which sat at
+              different baselines and weights than everything else on the page. */}
           <div className="mt-10 overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[560px] text-sm border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-[10px] font-mono uppercase tracking-widest text-zinc-500 border-b border-zinc-800">
-                  <th className="py-3 pr-6">{t("home.vs.capability")}</th>
-                  <th className="py-3 pr-6 text-white">{t("home.vs.worldsmith")}</th>
-                  <th className="py-3">{t("home.vs.typical")}</th>
+                <tr className="text-left text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                  <th className="py-3 pr-6 font-normal">{t("home.vs.capability")}</th>
+                  <th className="w-36 rounded-t-xl bg-white/[0.04] py-3 text-center font-normal text-white">
+                    {t("home.vs.worldsmith")}
+                  </th>
+                  <th className="w-44 py-3 text-center font-normal">{t("home.vs.typical")}</th>
                 </tr>
               </thead>
-              <tbody className="text-zinc-400">
-                {td<readonly string[]>("home.vs.rows").map((cap) => (
-                  <tr key={cap} className="border-b border-zinc-800/60">
-                    <td className="py-3 pr-6">{cap}</td>
-                    <td className="py-3 pr-6 text-emerald-400">✓</td>
-                    <td className="py-3 text-zinc-600">✗</td>
+              <tbody>
+                {td<readonly string[]>("home.vs.rows").map((cap, i, arr) => (
+                  <tr key={cap} className="group">
+                    <td className="border-t border-white/[0.06] py-3.5 pr-6 text-zinc-300 transition-colors group-hover:text-white">
+                      {cap}
+                    </td>
+                    <td className={`border-t border-white/[0.06] bg-white/[0.04] py-3.5 ${i === arr.length - 1 ? "rounded-b-xl" : ""}`}>
+                      <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+                        <Check size={13} strokeWidth={3} />
+                      </span>
+                    </td>
+                    <td className="border-t border-white/[0.06] py-3.5">
+                      {/* A dash, not a cross: a single call does not attempt these, which is a
+                          difference in scope rather than a failure. */}
+                      <span className="mx-auto flex h-6 w-6 items-center justify-center text-zinc-700">
+                        <Minus size={13} strokeWidth={3} />
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -545,13 +563,21 @@ export default function Landing() {
         <Reveal>
           <h2 className="text-3xl font-light tracking-tight text-center">{t("home.faq.heading")}</h2>
         </Reveal>
-        <div className="mt-10 space-y-3">
+        {/* One bordered list with dividers rather than a stack of separate cards: eight floating
+            boxes read as eight unrelated things, and the repeated borders competed with the
+            answers. The whole row is the hit target, and the chevron states which way it goes. */}
+        <div className="mt-10 divide-y divide-white/[0.07] overflow-hidden rounded-2xl border border-white/[0.07] bg-zinc-900/40">
           {td<Dictionary["home"]["faq"]["items"]>("home.faq.items").map((item) => (
-            <details key={item.q} className="group bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
-              <summary className="cursor-pointer list-none flex justify-between items-center text-sm font-semibold text-white">
-                {item.q}<span className="text-zinc-500 group-open:rotate-45 transition-transform">+</span>
+            <details key={item.q} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 px-5 py-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03] group-open:text-white">
+                {item.q}
+                <ChevronDown
+                  size={15}
+                  className="shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 group-open:text-zinc-300"
+                />
               </summary>
-              <p className="mt-3 text-sm text-zinc-400">{item.a}</p>
+              {/* Indented to the question's text, and held to a readable measure. */}
+              <p className="max-w-2xl px-5 pb-5 text-sm leading-relaxed text-zinc-400">{item.a}</p>
             </details>
           ))}
         </div>

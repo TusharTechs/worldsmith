@@ -181,7 +181,7 @@ export const ar: PartialDictionary = {
         },
       ],
     },
-    finalCta: { headingPre: "إنتاجك الأول ", headingStrong: "مجاني.", cta: "افتح استوديو Worldsmith" },
+    finalCta: { cta: "افتح استوديو Worldsmith" },
     exploreMore: {
       heading: "اكتشف المزيد من Worldsmith",
       tags: [

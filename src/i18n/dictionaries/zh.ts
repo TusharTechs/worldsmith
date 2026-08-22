@@ -181,7 +181,7 @@ export const zh: PartialDictionary = {
         },
       ],
     },
-    finalCta: { headingPre: "你的第一次制作,", headingStrong: "完全免费。", cta: "打开 Worldsmith Studio" },
+    finalCta: { cta: "打开 Worldsmith Studio" },
     exploreMore: {
       heading: "探索更多 Worldsmith 功能",
       tags: [

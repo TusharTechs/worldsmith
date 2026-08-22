@@ -181,7 +181,7 @@ export const ja: PartialDictionary = {
         },
       ],
     },
-    finalCta: { headingPre: "最初の制作は", headingStrong: "無料です。", cta: "Worldsmith Studioを開く" },
+    finalCta: { cta: "Worldsmith Studioを開く" },
     exploreMore: {
       heading: "Worldsmithをもっと見る",
       tags: [

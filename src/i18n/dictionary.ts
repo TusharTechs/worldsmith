@@ -15,7 +15,7 @@ export const en: {
     pipeline: { headingPre: string; headingStrong: string; subtitle: string; steps: { label: string; desc: string }[] };
     showcase: { headingPre: string; headingStrong: string; subtitle: string; items: string[] };
     flagship: { headingPre: string; headingStrong: string; subtitle: string; open: string; items: { tag: string; title: string; desc: string }[] };
-    vs: { heading: string; capability: string; worldsmith: string; typical: string; rows: string[] };
+    vs: { heading: string; caption: string; capability: string; worldsmith: string; typical: string; rows: string[] };
     pricing: {
       headingPre: string; headingStrong: string; subtitle: string; monthly: string; annual: string; annualDiscount: string;
       currentPlan: string; upgradeTo: string; switchTo: string; choose: string; creditsPerMonth: string; active: string; mostPopular: string;
@@ -189,6 +189,7 @@ export const en: {
       // discounts on sight. Contrasting the approach instead is both verifiable and the actual
       // argument: these are things one model call cannot do, whoever is making it.
       heading: "What a pipeline does that a prompt can't.",
+      caption: "Every row is something Worldsmith does on its own, unprompted, as part of one run.",
       capability: "Capability",
       worldsmith: "Worldsmith",
       typical: "A single generation call",
@@ -302,7 +303,9 @@ export const en: {
         },
       ],
     },
-    finalCta: { headingPre: "Your first production is ", headingStrong: "free.", cta: "Open Worldsmith Studio" },
+    // The free trial is 15 credits. A production costs about 1,047, so a first production was
+    // never free — 15 credits is three stills. Promise what the trial actually buys.
+    finalCta: { headingPre: "Try it free. ", headingStrong: "No card required.", cta: "Open Worldsmith Studio" },
     exploreMore: {
       heading: "Explore more of Worldsmith",
       tags: [

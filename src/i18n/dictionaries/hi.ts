@@ -181,7 +181,7 @@ export const hi: PartialDictionary = {
         },
       ],
     },
-    finalCta: { headingPre: "आपका पहला प्रोडक्शन है ", headingStrong: "मुफ्त।", cta: "Worldsmith Studio खोलें" },
+    finalCta: { cta: "Worldsmith Studio खोलें" },
     exploreMore: {
       heading: "Worldsmith को और एक्सप्लोर करें",
       tags: [

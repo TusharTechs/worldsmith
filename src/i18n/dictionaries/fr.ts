@@ -181,7 +181,7 @@ export const fr: PartialDictionary = {
         },
       ],
     },
-    finalCta: { headingPre: "Votre première production est ", headingStrong: "gratuite.", cta: "Ouvrir Worldsmith Studio" },
+    finalCta: { cta: "Ouvrir Worldsmith Studio" },
     exploreMore: {
       heading: "Découvrez-en plus sur Worldsmith",
       tags: [

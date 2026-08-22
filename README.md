@@ -44,24 +44,36 @@ Beyond the full pipeline, **11 standalone tools** work on their own — Text→I
 
 **Parallel Search is the first act of the pipeline**, not a bolt-on. Worldsmith's core claim — *"not a generator, a studio"* — depends on researching a real opportunity before a single frame is drawn. That research step is Parallel.
 
-- **Where:** [`src/providers/parallel-research-provider.ts`](src/providers/parallel-research-provider.ts) — calls `https://api.parallel.ai` at runtime
-- **Wired in:** [`src/providers/research-factory.ts`](src/providers/research-factory.ts)
+- **The call:** [`parallel-research-provider.ts:16`](src/providers/parallel-research-provider.ts#L16) — `POST /v1beta/search` against [`https://api.parallel.ai`](src/providers/parallel-research-provider.ts#L10), at runtime
+- **Wired in:** [`research-factory.ts:8`](src/providers/research-factory.ts#L8) — selected whenever `RESEARCH_PROVIDER` is not `mock` and a key is present
+- **Invoked by the pipeline:** [`orchestrator.ts:151`](src/core/orchestrator.ts#L151) — the first stage of every production, before any frame is drawn
 - **Proof at runtime:** the Studio's **Research Signals** panel renders live results with source citations, and the header badge reads `RESEARCH · PARALLEL` straight from resolved config
 
 ## Google Cloud
 
 Every model in the system is a Google model. There are no third-party AI providers — [`src/providers/factory.ts`](src/providers/factory.ts) resolves to Gemini, Gemini on Vertex AI, or an offline mock, and nothing else.
 
-| Capability | Service |
-|---|---|
-| Reasoning / agents | Gemini on **Vertex AI** |
-| Image generation | **Vertex AI** — `gemini-2.5-flash-image` |
-| Video generation | **Veo 3.1** |
-| Continuity QC | Gemini **VLM** |
-| Narration | Gemini **TTS** |
-| Auth + data | **Firebase** Auth / Firestore |
+| Capability | Service | Imported and called at |
+|---|---|---|
+| Reasoning / agents | Gemini on **Vertex AI** | [`vertex-provider.ts:49`](src/providers/vertex-provider.ts#L49) |
+| Image generation | **Vertex AI** — `gemini-2.5-flash-image` | [`vertex-image-provider.ts:37`](src/providers/vertex-image-provider.ts#L37) |
+| Video generation | **Veo 3.1** | [`veo-video-provider.ts:44`](src/providers/veo-video-provider.ts#L44) |
+| Continuity QC | Gemini **VLM** | [`gemini-vlm-provider.ts:30`](src/providers/gemini-vlm-provider.ts#L30) |
+| Narration | Gemini **TTS** | [`gemini-tts-provider.ts:80`](src/providers/gemini-tts-provider.ts#L80) |
+| Campaign copy | Gemini | [`gemini-distribution-provider.ts:65`](src/providers/gemini-distribution-provider.ts#L65) |
+| Auth + data | **Firebase** Auth / Firestore | [`admin-firestore-store.ts:37`](src/store/admin-firestore-store.ts#L37) |
 
-SDKs: `@google/genai`, `@google/generative-ai`, `firebase`, `firebase-admin`.
+All six model providers construct their client as `new GoogleGenAI({ vertexai: true, project, location })`
+— Vertex AI proper, not the consumer Gemini API — and call `models.generateContent` or
+`models.generateVideos` on it. SDKs: `@google/genai`, `@google/generative-ai`, `firebase`,
+`firebase-admin`.
+
+**Verify it in one command**, without a key or an account:
+
+```bash
+grep -rn "vertexai: true" src/providers/     # every Vertex client construction
+grep -rn "parallel.ai\|v1beta/search" src/providers/   # the Parallel Search call
+```
 
 ## Screenshots
 

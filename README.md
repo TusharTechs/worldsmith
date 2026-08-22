@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo.svg" width="88" alt="Worldsmith" />
+<img src="public/logo-badge-512.png" width="88" alt="Worldsmith" />
 
 # Worldsmith
 
@@ -64,13 +64,11 @@ SDKs: `@google/genai`, `@google/generative-ai`, `firebase`, `firebase-admin`.
 
 ## Screenshots
 
-> Capture these from a running instance into `docs/screenshots/` (see [Screenshot guide](#screenshot-guide)).
-
 | | |
 |---|---|
-| ![Landing](docs/screenshots/01-landing.png) **Landing** | ![Studio](docs/screenshots/02-studio-pipeline.png) **Studio — full pipeline** |
-| ![Parallel](docs/screenshots/03-parallel-signals.png) **Parallel research signals** | ![Assets](docs/screenshots/04-asset-gallery.png) **Asset gallery + QC** |
-| ![Tools](docs/screenshots/05-text-to-image.png) **Text → Image** | ![Distribution](docs/screenshots/06-distribution.png) **8-platform distribution** |
+| ![Landing](docs/screenshots/01-landing.png) **Landing** | ![Studio](docs/screenshots/02-studio-pipeline.png) **Studio — the production console** |
+| ![Pipeline](docs/screenshots/03-parallel-signals.png) **The loop — Parallel signals through to distribution** | ![Assets](docs/screenshots/04-asset-gallery.png) **Every asset, autonomously produced** |
+| ![Tools](docs/screenshots/05-text-to-image.png) **Text → Image** | ![Social](docs/screenshots/06-distribution.png) **Social posts, in native platform sizes** |
 
 ## Architecture
 
@@ -144,18 +142,17 @@ Set every `*_PROVIDER` to `mock` to explore the full flow without spending anyth
 
 ## Screenshot guide
 
+The screenshots above regenerate from a locally running instance:
+
 ```bash
 npm run dev
+node docs/capture-screenshots.mjs
 ```
 
-| File | Where | Capture |
-|---|---|---|
-| `01-landing.png` | `/` | Hero through the showcase grid |
-| `02-studio-pipeline.png` | `/studio` | Provider badges + completed timeline + World Bible |
-| `03-parallel-signals.png` | `/studio` | Research Signals panel with citations |
-| `04-asset-gallery.png` | `/studio` | Asset gallery after Generate Assets |
-| `05-text-to-image.png` | `/tools?tool=t2i` | A generated result |
-| `06-distribution.png` | `/studio` | Distribution package tabs |
+Targets live in `docs/screenshots.json`. Shots are taken signed-out, so no account
+data ends up in the repo — which also means the Studio interior (a completed
+timeline, the Research Signals panel with its citations, the distribution tabs)
+is not covered. Capture those by hand from a signed-in session if you want them.
 
 ## Tech
 

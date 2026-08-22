@@ -1,0 +1,8 @@
+[
+  { "file": "01-landing.png",         "url": "http://localhost:3000/", "wait": 6500 },
+  { "file": "02-studio-pipeline.png", "url": "http://localhost:3000/studio", "wait": 7000 },
+  { "file": "03-parallel-signals.png","url": "http://localhost:3000/", "scrollTo": "#pipeline", "offset": 70, "wait": 6500 },
+  { "file": "04-asset-gallery.png",   "url": "http://localhost:3000/", "scrollTo": "#showcase", "offset": 70, "wait": 6500 },
+  { "file": "05-text-to-image.png",   "url": "http://localhost:3000/tools?tool=t2i", "wait": 6500 },
+  { "file": "06-distribution.png",    "url": "http://localhost:3000/tools?tool=social&platform=instagram", "wait": 6500 }
+]

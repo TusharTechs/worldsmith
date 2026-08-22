@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { resolveServiceAccount, resolveVertexConfig } from "@/providers/vertex-provider";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,33 @@ export const dynamic = "force-dynamic";
  * Deliberately reports presence and length only — never a value. The variable names are already
  * public in .env.example, so this discloses nothing that the repository does not.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // ?deep=1 exercises the parts that actually fail: initialising the admin app, reading Firestore,
+  // and the Auth client. Parsing the service account proves far less than it appears to.
+  const deep = req.nextUrl.searchParams.get("deep") === "1";
+  let deepResult: Record<string, string> | undefined;
+  if (deep) {
+    deepResult = {};
+    try {
+      const { adminDb } = await import("@/store/credits-store");
+      const snap = await adminDb().collection("users").limit(1).get();
+      deepResult.firestore = `ok, ${snap.size} doc(s) readable`;
+    } catch (e) {
+      deepResult.firestore = `FAILED: ${(e as Error).message}`.slice(0, 300);
+    }
+    try {
+      const { verifyUser } = await import("@/store/credits-store");
+      await verifyUser("not-a-real-token");
+      deepResult.auth = "unexpectedly accepted a bogus token";
+    } catch (e) {
+      const m = (e as Error).message;
+      // Rejecting a bogus token is the healthy outcome; only an init failure is a real problem.
+      deepResult.auth = /Decoding Firebase ID token failed|argument|must be a string/i.test(m)
+        ? "ok, admin Auth initialised (bogus token correctly rejected)"
+        : `FAILED: ${m}`.slice(0, 300);
+    }
+  }
+
   const present = (name: string) => {
     const v = process.env[name];
     return v ? { set: true, length: v.length } : { set: false };
@@ -36,6 +62,7 @@ export async function GET() {
   return NextResponse.json({
     ok: admin.ok,
     admin,
+    deep: deepResult,
     vertexProject: resolveVertexConfig().projectId ? "set" : "MISSING",
     env: {
       VERTEX_SERVICE_ACCOUNT_JSON: present("VERTEX_SERVICE_ACCOUNT_JSON"),

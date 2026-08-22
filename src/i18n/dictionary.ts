@@ -19,7 +19,7 @@ export const en: {
     pricing: {
       headingPre: string; headingStrong: string; subtitle: string; monthly: string; annual: string; annualDiscount: string;
       currentPlan: string; upgradeTo: string; switchTo: string; choose: string; creditsPerMonth: string; active: string; mostPopular: string;
-      perks: Record<"images200" | "allToolsStudio" | "noWatermark" | "exports720" | "everythingCreator" | "exports1080" | "priorityQueues" | "textkitPresets" | "seats3" | "everythingStudio" | "seats10" | "whiteLabel" | "apiAccess", string>;
+      perks: Record<"prodCreator" | "allTools" | "continuityQc" | "campaign8" | "everythingCreator" | "prodStudio" | "prod30" | "creditsRoll" | "everythingStudio" | "prodAgency" | "prod30x4", string>;
       topupHeading: string; topupSubtitle: string; claimPurchase: string;
       promoHeading: string; promoSubtitle: string; builtOn: string;
       saveAnnual: string; packSaving: string; packBase: string;
@@ -184,10 +184,14 @@ export const en: {
       ],
     },
     vs: {
-      heading: "Why creators switch.",
+      // The comparison column used to read "Typical AI video tools" and put a cross beside every
+      // row — an unfalsifiable claim about other people's products, and the kind of sweep a reader
+      // discounts on sight. Contrasting the approach instead is both verifiable and the actual
+      // argument: these are things one model call cannot do, whoever is making it.
+      heading: "What a pipeline does that a prompt can't.",
       capability: "Capability",
       worldsmith: "Worldsmith",
-      typical: "Typical AI video tools",
+      typical: "A single generation call",
       rows: [
         "Live trend & audience research",
         "Persistent World Bible & continuity rules",
@@ -201,7 +205,7 @@ export const en: {
     pricing: {
       headingPre: "Simple credits. ",
       headingStrong: "Pay for what you render.",
-      subtitle: "Stills cost 5 credits. Video costs 40 per second of render, in fixed 8-second Veo clips — a finished 15-second production runs about 1,050. Unused credits roll over 30 days.",
+      subtitle: "Stills cost 5 credits. Video costs 40 per second of render, in fixed 8-second Veo clips — a finished 15-second production runs about 1,050. Unused credits carry over for as long as your subscription is active.",
       monthly: "Monthly",
       annual: "Annual",
       annualDiscount: "−20%",
@@ -212,20 +216,20 @@ export const en: {
       creditsPerMonth: "credits / month",
       active: "Active",
       mostPopular: "Most popular",
+      // Every claim here is something the product does today. The plans differ by volume, not by
+      // features, so they say so — an unbuilt perk on a paid tier is a false advertisement.
       perks: {
-        images200: "One full 15s production, or 240 stills",
-        allToolsStudio: "All tools + Studio",
-        noWatermark: "No watermark",
-        exports720: "720p exports",
+        prodCreator: "One 15-second production a month, or 240 stills",
+        allTools: "All 11 tools and the full Studio pipeline",
+        continuityQc: "Every shot continuity-checked against your World Bible",
+        campaign8: "An 8-destination campaign with every production",
         everythingCreator: "Everything in Creator",
-        exports1080: "1080p exports",
-        priorityQueues: "Priority queues",
-        textkitPresets: "TextKit pro presets",
-        seats3: "3 team seats",
+        prodStudio: "Three 15-second productions a month, or 660 stills",
+        prod30: "Room for a 30-second production in one run",
+        creditsRoll: "Unused credits carry over while you stay subscribed",
         everythingStudio: "Everything in Studio",
-        seats10: "10 seats",
-        whiteLabel: "White-label exports",
-        apiAccess: "API access",
+        prodAgency: "Seven 15-second productions a month, or 1,640 stills",
+        prod30x4: "Or four 30-second productions",
       },
       topupHeading: "Need more? Credit top-up packs",
       topupSubtitle: "For months when you ship a lot — never expire, stack on any plan.",
@@ -272,10 +276,25 @@ export const en: {
           q: "What models power it?",
           a: "Google Gemini and Veo on Vertex AI, Parallel Search for live research, FFmpeg for deterministic assembly. No black-box third-party AI.",
         },
-        { q: "Do I own what I make?", a: "On paid plans, yes — full commercial rights to every asset and film." },
+        {
+          q: "Do I own what I make?",
+          a: "Worldsmith claims no ownership of anything you generate — your projects and assets are yours, on every plan including the free trial. Output is produced by Google's Gemini and Veo models, so Google's generative-AI terms govern how it may be used, commercially included.",
+        },
         {
           q: "Can I use just one tool?",
-          a: "Absolutely. The Toolbox gives you Flow-style text+image→video, TTS, reverse-prompting, upscaling, a standalone social-post generator, and a YouTube video+thumbnail+metadata kit — all credit-metered, none requiring a full production.",
+          a: "Yes. Every tool runs on its own — text→image, text→video, image→video, voiceover+images→video, speech, image→prompt, upscale, social post, YouTube kit, Cast and the creative text editor. All are credit-metered and none require a full production.",
+        },
+        {
+          q: "What happens if a generation fails?",
+          a: "You are not charged for it. Credits are reserved before a model is called and returned in full if nothing usable comes back, so a failed shot costs you nothing and a run that hits its limit stops before spending rather than after.",
+        },
+        {
+          q: "Do unused credits expire?",
+          a: "No. Monthly credits are added to your balance rather than replacing it, so anything you do not spend carries over while your subscription stays active. Top-up packs never expire and stack on top of any plan.",
+        },
+        {
+          q: "Who can see my projects?",
+          a: "Only you. Projects and generated assets are scoped to the account that made them, and nothing is shared or published anywhere unless you download it and post it yourself.",
         },
         {
           q: "Can I buy the same plan twice?",

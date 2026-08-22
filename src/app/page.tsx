@@ -80,9 +80,9 @@ const STEP_NUMBERS = ["01", "02", "03", "04", "05", "06"];
 // Plan tier names (Creator/Studio/Agency) stay in English everywhere — `id` drives billing
 // logic and must never be translated; only the displayed label (looked up via PLAN_NAME_KEY) is.
 const PLANS = [
-  { id: "creator", m: 19, a: 15, credits: "1,200", perkKeys: ["images200", "allToolsStudio", "noWatermark", "exports720"], hot: false },
-  { id: "studio", m: 49, a: 39, credits: "3,300", perkKeys: ["everythingCreator", "exports1080", "priorityQueues", "textkitPresets", "seats3"], hot: true },
-  { id: "agency", m: 119, a: 95, credits: "8,200", perkKeys: ["everythingStudio", "seats10", "whiteLabel", "apiAccess"], hot: false },
+  { id: "creator", m: 19, a: 15, credits: "1,200", perkKeys: ["prodCreator", "allTools", "continuityQc", "campaign8"], hot: false },
+  { id: "studio", m: 49, a: 39, credits: "3,300", perkKeys: ["everythingCreator", "prodStudio", "prod30", "creditsRoll"], hot: true },
+  { id: "agency", m: 119, a: 95, credits: "8,200", perkKeys: ["everythingStudio", "prodAgency", "prod30x4"], hot: false },
 ] as const;
 const PLAN_NAME: Record<string, string> = { creator: "Creator", studio: "Studio", agency: "Agency" };
 

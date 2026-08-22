@@ -221,4 +221,5 @@ Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict) · Tailwin
 
 ## License
 
-All rights reserved.
+[Apache License 2.0](LICENSE) — free to use, modify and distribute, including
+commercially, with an explicit patent grant.

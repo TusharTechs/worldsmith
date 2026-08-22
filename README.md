@@ -1,8 +1,9 @@
 <div align="center">
 
-<img src="public/logo-badge-512.png" width="88" alt="Worldsmith" />
-
-# Worldsmith
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/wordmark-dark.png">
+  <img src="docs/brand/wordmark-light.png" width="340" alt="Worldsmith" />
+</picture>
 
 **An autonomous media production studio. One idea in — a complete, distribution-ready production out.**
 

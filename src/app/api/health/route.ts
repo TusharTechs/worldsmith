@@ -82,6 +82,9 @@ export async function GET(req: NextRequest) {
       DODO_WEBHOOK_SECRET: present("DODO_WEBHOOK_SECRET"),
       RESEARCH_PROVIDER: process.env.RESEARCH_PROVIDER ?? "unset",
       IMAGE_PROVIDER: process.env.IMAGE_PROVIDER ?? "unset",
+      // Without a bucket, generated images and uploaded profile photos are written to local disk
+      // and their /api/assets URIs cannot resolve anywhere else.
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "MISSING",
     },
   });
 }

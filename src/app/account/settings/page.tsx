@@ -9,6 +9,7 @@ import { serverListToolRuns } from "@/app/actions/tools";
 import { PLANS, FREE_TRIAL_CREDITS } from "@/core/credits";
 import { User, Crown, BarChart3, Camera, Gift } from "lucide-react";
 import { RedeemCode } from "@/components/ui/RedeemCode";
+import { Avatar } from "@/components/ui/Avatar";
 
 const PLAN_CAP: Record<string, number> = {
   free: FREE_TRIAL_CREDITS,
@@ -188,13 +189,10 @@ export default function AccountSettingsPage() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="relative w-20 h-20 shrink-0">
-                    {photoPreview ? (
-                      <img src={photoPreview} alt="" className="w-20 h-20 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full ws-gradient-bg flex items-center justify-center text-black font-semibold text-2xl">
-                        {(name || auth.user.email || "A").charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    {/* Shared Avatar rather than a bare <img>: a photo that fails to load —
+                        an expired Google URL, or one stored on a host that no longer has the
+                        file — otherwise renders as a broken glyph on the settings page. */}
+                    <Avatar photoURL={photoPreview} label={name || auth.user.email || "A"} size={80} />
                     <button
                       onClick={() => fileRef.current?.click()}
                       className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white"

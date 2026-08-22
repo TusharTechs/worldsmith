@@ -169,7 +169,11 @@ zero API spend. That is how this was developed, and how you can run it now.
 
 ## Run it locally
 
-**Prerequisites:** Node 20+, a Google Cloud project with Vertex AI enabled, a Firebase project, and a Parallel API key.
+**Prerequisites:** Node 22.12+, a Google Cloud project with Vertex AI enabled, a Firebase project, and a Parallel API key.
+
+> Node 22.12 is a hard floor, not a preference. `firebase-admin` reaches `jwks-rsa`, which
+> `require()`s `jose` — an ESM-only package. Older Node throws `ERR_REQUIRE_ESM` and every
+> call touching Auth or Firestore fails, while the app otherwise appears to start normally.
 
 ```bash
 git clone https://github.com/TusharTechs/worldsmith.git && cd worldsmith

@@ -99,10 +99,10 @@ export function AccountMenu({ credits, plan }: { credits?: number | null; plan?:
           <a href="/account/settings" onClick={() => setOpen(false)} className="block p-4 border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors">
             <div className="flex items-center justify-between text-xs">
               <span className="text-zinc-400">{t("account.credits")}</span>
-              <span className="text-zinc-300 flex items-center gap-1">{credits ?? 0} {t("account.creditsLeft")} <ChevronRight size={12} /></span>
+              <span className="text-zinc-300 flex items-center gap-1">{credits == null ? <span className="inline-block h-3 w-10 rounded bg-zinc-800 animate-pulse" aria-label="Loading credits" /> : <>{credits} {t("account.creditsLeft")}</>} <ChevronRight size={12} /></span>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-              <div className="h-full ws-gradient-bg rounded-full transition-all" style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full transition-all ${credits == null ? "bg-zinc-800 animate-pulse" : "ws-gradient-bg"}`} style={{ width: credits == null ? "100%" : `${pct}%` }} />
             </div>
           </a>
 

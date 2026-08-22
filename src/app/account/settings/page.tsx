@@ -245,7 +245,7 @@ export default function AccountSettingsPage() {
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-white">{planLabel}</span>
-                    <span className="text-xs text-zinc-400">{credits ?? 0} {t("account.creditsLeft")}</span>
+                    <span className="text-xs text-zinc-400">{credits == null ? <span className="inline-block h-3 w-12 rounded bg-zinc-800 animate-pulse" aria-label="Loading credits" /> : <>{credits} {t("account.creditsLeft")}</>}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                     <div className="h-full ws-gradient-bg rounded-full transition-all" style={{ width: `${pct}%` }} />

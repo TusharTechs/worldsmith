@@ -20,7 +20,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { Label } from "@/components/ui/Input";
 import { PlatformIcon, type PlatformKey } from "@/components/ui/PlatformIcon";
 import { PLATFORM_PROFILES, platformProfile } from "./platform-profiles";
-import { TOOL_EXAMPLES, PLATFORM_SIZE_EXAMPLES, type ToolExample } from "./examples";
+import { TOOL_EXAMPLES, PLATFORM_SIZE_EXAMPLES, SOCIAL_HERO_FORMAT, type ToolExample } from "./examples";
 import { Gallery } from "@/components/tools/Gallery";
 import { SizeShowcase } from "@/components/tools/SizeShowcase";
 import { downloadFromUri, downloadText, assetFilename } from "@/lib/download";
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import CreativeTextEditor from "@/components/CreativeTextEditor";
 import type { TextLayer } from "@/core/textkit";
+import { CreationTile } from "@/components/tools/CreationTile";
 
 /**
  * `name` is the functional pair — it stays, because it is what people search for and what the
@@ -638,6 +639,11 @@ export default function ToolsPage() {
   /** Video tools must never illustrate themselves with stills. */
   const VIDEO_TOOLS = new Set(["t2v", "i2v", "flow", "ytkit"]);
 
+  // The result panel samples three variations for most tools. Channel Kit is not variations — each
+  // example is a different deliverable in one package (the clip, its thumbnail, the character
+  // sheet, the title card), so cutting it to three would show an incomplete kit.
+  const previewCount = tool === "ytkit" ? 4 : 3;
+
   const examples: ToolExample[] = activePlatformKey
     ? ((): ToolExample[] => {
         // The platform size table is images only. On a video tool the honest answer is the tool's
@@ -686,10 +692,21 @@ export default function ToolsPage() {
           ? all.filter((e) => e.format.toLowerCase() === urlFormat.toLowerCase())
           : [];
         const scoped = bySize.length ? bySize : byName;
+        // The generic Social Post page names no format, so it used to fall through to `all` and
+        // reproduce the very mix the scoping above exists to prevent. It stands for one creative —
+        // the platform's flagship post — so it shows that format only.
+        const hero = SOCIAL_HERO_FORMAT[activePlatformKey];
+        const byHero = hero
+          ? all.filter((e) => e.format.toLowerCase() === hero.toLowerCase())
+          : [];
         // When a format is named but has no example yet, show nothing rather than falling back to
         // the platform's other sizes — a 200×200 profile icon on a 1080×1920 Cover page is a
         // worse answer than an honest empty state.
-        const chosen = urlFormat ? scoped : (scoped.length ? scoped : all);
+        const chosen = urlFormat
+          ? scoped
+          : scoped.length ? scoped
+          : byHero.length ? byHero
+          : all;
         return chosen.map((e) => ({
           uri: e.uri,
           kind: (e.kind ?? "image") as "image" | "video",
@@ -1107,7 +1124,7 @@ export default function ToolsPage() {
                 <div className="space-y-3">
                   {/* Three, not four: the grid lays out three per row, so a fourth wrapped onto a second
                       row on its own. One row is the whole point of the count rule. */}
-                  <Gallery examples={examples.slice(0, 3)} onUsePrompt={usePrompt} compact />
+                  <Gallery examples={examples.slice(0, previewCount)} onUsePrompt={usePrompt} compact />
                   <p className="text-[11px] leading-relaxed text-zinc-600">
                     {examples.some((e) => e.kind === "compare")
                       ? "Made with this tool. Drag the seam to compare."
@@ -1314,33 +1331,7 @@ export default function ToolsPage() {
           <div className="mt-16 border-t border-white/[0.07] pt-8 space-y-3">
             <h3 className="text-xs uppercase tracking-widest text-zinc-500">Your creations</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {history.map((r) => (
-                <div key={r.id} className="group bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden relative">
-                  {r.kind === "image" && r.uri && <img src={r.uri} alt="" className="w-full aspect-square object-cover" />}
-                  {r.kind === "video" && r.uri && <video src={r.uri} className="w-full aspect-square object-cover" muted />}
-                  {r.kind === "audio" && r.uri && (
-                    <div className="w-full aspect-square bg-zinc-900 flex items-center justify-center text-3xl">🗣</div>
-                  )}
-                  {r.kind === "text" && (
-                    <div className="w-full aspect-square bg-zinc-900 flex items-center justify-center text-3xl">✍</div>
-                  )}
-                  {r.uri && (
-                    <button
-                      onClick={() => downloadFromUri(r.uri, assetFilename(r.tool, r.prompt))}
-                      title="Download"
-                      className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-zinc-950/80 border border-zinc-700 flex items-center justify-center text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-800"
-                    >
-                      <Download size={14} />
-                    </button>
-                  )}
-                  <span className="absolute top-1 left-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-300 uppercase">
-                    {r.tool}
-                  </span>
-                  <span className="absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 border border-zinc-800 text-cyan-300">
-                    −{r.credits}
-                  </span>
-                </div>
-              ))}
+              {history.map((r) => <CreationTile key={r.id} r={r} />)}
             </div>
           </div>
         )}

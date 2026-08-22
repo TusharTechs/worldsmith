@@ -33,18 +33,18 @@ export interface ToolExample {
 
 export const TOOL_EXAMPLES: Record<string, ToolExample[]> = {
   t2i: [
-    { uri: "/showcase/img-1787400342415-knx2au.webp", kind: "image", prompt: "A glass-blower turning a glowing orange gather of molten glass on the pipe, his lit face close in frame, sparks and dark workshop behind, warm firelight filling the whole frame edge to edge, no empty ceiling, cinematic" },
-    { uri: "/showcase/img-1787399047430-f6i3c1.webp", kind: "image", prompt: "An abandoned observatory dome open to a star-filled sky, moonlight through rusted machinery, wide cinematic shot" },
-    { uri: "/showcase/img-1787399087596-ds07sn.webp", kind: "image", prompt: "A sushi chef's hands slicing toro on a hinoki counter, overhead, precise, natural light, portrait framing" },
-    { uri: "/showcase/img-1787399154854-rgt5gb.webp", kind: "image", prompt: "A vintage racing car mid-drift on a wet mountain road, spray and motion blur, golden hour, cinematic" },
-    { uri: "/showcase/img-1787393434023-vuvget.webp", kind: "image", prompt: "Editorial portrait of a woman in a scarlet wool coat against a raw concrete wall, hard directional side light, deep shadow, no text" },
-    { uri: "/showcase/img-1787393350826-y118uv.webp", kind: "image", prompt: "A lone astronaut planting a glowing flag on a crystal moon, vast starfield behind, epic scale, cinematic wide shot" },
-    { uri: "/showcase/img-1787393219559-4laifg.webp", kind: "image", prompt: "Macro shot of morning dew on a spider web at golden hour, extreme shallow depth of field, backlit, nature photography" },
+    { uri: "/showcase/img-1787400342415-knx2au.webp", kind: "image", width: 1024, height: 1024, prompt: "A glass-blower turning a glowing orange gather of molten glass on the pipe, his lit face close in frame, sparks and dark workshop behind, warm firelight filling the whole frame edge to edge, no empty ceiling, cinematic" },
+    { uri: "/showcase/img-1787399047430-f6i3c1.webp", kind: "image", width: 1280, height: 720, prompt: "An abandoned observatory dome open to a star-filled sky, moonlight through rusted machinery, wide cinematic shot" },
+    { uri: "/showcase/img-1787399087596-ds07sn.webp", kind: "image", width: 1080, height: 1350, prompt: "A sushi chef's hands slicing toro on a hinoki counter, overhead, precise, natural light, portrait framing" },
+    { uri: "/showcase/img-1787399154854-rgt5gb.webp", kind: "image", width: 1280, height: 720, prompt: "A vintage racing car mid-drift on a wet mountain road, spray and motion blur, golden hour, cinematic" },
+    { uri: "/showcase/img-1787393434023-vuvget.webp", kind: "image", width: 1024, height: 1024, prompt: "Editorial portrait of a woman in a scarlet wool coat against a raw concrete wall, hard directional side light, deep shadow, no text" },
+    { uri: "/showcase/img-1787393350826-y118uv.webp", kind: "image", width: 1024, height: 1024, prompt: "A lone astronaut planting a glowing flag on a crystal moon, vast starfield behind, epic scale, cinematic wide shot" },
+    { uri: "/showcase/img-1787393219559-4laifg.webp", kind: "image", width: 1024, height: 1024, prompt: "Macro shot of morning dew on a spider web at golden hour, extreme shallow depth of field, backlit, nature photography" },
   ],
 
   // Its own before/after pairs — the sources here belong to no other tool, so nothing is reused.
   upscale: [
-    { uri: "/showcase/img-1787400714242-x22yhe.webp", before: "/showcase/img-1787399199647-vtj78t.webp", kind: "compare", caption: "320×320 original, upscaled 4× to 1280×1280" },
+    { uri: "/showcase/img-1787400714242-x22yhe.webp", before: "/showcase/img-1787399199647-vtj78t.webp", kind: "compare", width: 1280, height: 1280, caption: "320×320 original, upscaled 4× to 1280×1280" },
   ],
 
   i2p: [
@@ -53,6 +53,8 @@ export const TOOL_EXAMPLES: Record<string, ToolExample[]> = {
       // whole point of the example is to show how good the description actually is.
       uri: "/showcase/img-1787393197957-wde7pa.webp",
       kind: "text",
+      width: 1024,
+      height: 1024,
       caption: "Read from this still",
       output:
         "A highly detailed cyberpunk city street corner at night in heavy rain, featuring a vibrant ramen shop. The scene is dominated by glowing neon signs in red, cyan, pink, and orange, casting intense reflections on the wet, shimmering street below. Several indistinct figures with umbrellas walk through the rain, while others sit at the ramen counter. Electrical wires crisscross overhead against dark futuristic buildings. Atmospheric rain streaks, misty steam, and a moody neo-noir ambiance.",
@@ -60,34 +62,36 @@ export const TOOL_EXAMPLES: Record<string, ToolExample[]> = {
   ],
 
   social: [
-    { uri: "/showcase/img-1787393624459-a8oabp.webp", kind: "image", prompt: "Announcing our autumn drop: hand-thrown ceramic mugs, 40 pieces only, glazed in storm blue" },
+    { uri: "/showcase/img-1787393624459-a8oabp.webp", kind: "image", width: 1024, height: 1024, prompt: "Announcing our autumn drop: hand-thrown ceramic mugs, 40 pieces only, glazed in storm blue" },
   ],
 
   text: [
-    { uri: "/showcase/img-1787399392315-9vhad4.webp", kind: "image", caption: "A canvas composed with open sky for a headline" },
-    { uri: "/showcase/img-1787399440644-ymou4o.webp", kind: "image", caption: "Fog in the upper third — type sits in the negative space" },
+    { uri: "/showcase/img-1787399392315-9vhad4.webp", kind: "image", width: 1280, height: 720, caption: "A canvas composed with open sky for a headline" },
+    { uri: "/showcase/img-1787399440644-ymou4o.webp", kind: "image", width: 1080, height: 1350, caption: "Fog in the upper third — type sits in the negative space" },
   ],
 
   cast: [
-    { uri: "/showcase/img-1787397383335-x9bbd1.webp", kind: "image", prompt: "A weathered dockside fisherwoman in her sixties, silver braid, oilskin jacket, sun-creased face, warm and unsmiling" },
+    { uri: "/showcase/img-1787397383335-x9bbd1.webp", kind: "image", width: 1024, height: 1024, prompt: "A weathered dockside fisherwoman in her sixties, silver braid, oilskin jacket, sun-creased face, warm and unsmiling" },
   ],
 
   t2v: [
-    { uri: "/showcase/vid-1787374077992-3l6bin.mp4", kind: "video", caption: "Golden-hour tracking shot" },
-    { uri: "/showcase/vid-1787374178740-d2ulgs.mp4", kind: "video", caption: "Drone rise over misty pine forest" },
+    { uri: "/showcase/vid-1787374077992-3l6bin.mp4", kind: "video", width: 1280, height: 720, caption: "Golden-hour tracking shot" },
+    { uri: "/showcase/vid-1787374178740-d2ulgs.mp4", kind: "video", width: 1280, height: 720, caption: "Drone rise over misty pine forest" },
   ],
 
   i2v: [
-    { uri: "/showcase/vid-1787379851902-9jlkz4.mp4", kind: "video", caption: "A still brought to life — molten metal in motion" },
+    { uri: "/showcase/vid-1787379851902-9jlkz4.mp4", kind: "video", width: 1280, height: 720, caption: "A still brought to life — molten metal in motion" },
   ],
 
   flow: [
-    { uri: "/showcase/vid-1787379672761-hjfeyd.mp4", kind: "video", caption: "Narration, references and direction in one pass" },
+    { uri: "/showcase/vid-1787379672761-hjfeyd.mp4", kind: "video", width: 1280, height: 720, caption: "Narration, references and direction in one pass" },
   ],
 
   ytkit: [
-    { uri: "/showcase/vid-1787380605932-wc0u9d.mp4", kind: "video", caption: "A finished short, cut and narrated" },
-    { uri: "/showcase/img-1787400632421-c06akp.webp", kind: "image", width: 1280, height: 720, caption: "Its matching 1280×720 thumbnail" },
+    { uri: "/showcase/vid-1787380605932-wc0u9d.mp4", kind: "video", width: 1280, height: 720, caption: "A finished short, cut and narrated" },
+    { uri: "/showcase/img-1787415822764-jw0prx.webp", kind: "image", width: 1280, height: 720, caption: "Its matching 1280×720 thumbnail" },
+    { uri: "/showcase/img-1787416595408-vbl2wp.webp", kind: "image", width: 1280, height: 720, caption: "A character reference sheet for the cast" },
+    { uri: "/showcase/img-1787416596550-1ogxp3.webp", kind: "image", width: 1280, height: 720, caption: "A title card with the film's details" },
   ],
 
   tts: [
@@ -133,6 +137,23 @@ export function exampleTarget(width: number, height: number, canvasWidth = 1000,
   // padding. Anything that only fits one or two keeps that smaller number.
   return Math.max(1, Math.min(3, Math.floor(canvasWidth / (rendered + gap))));
 }
+
+/**
+ * The one creative the generic "Social Post" page for each platform stands for.
+ *
+ * A platform page reached without a named format used to show every format that platform has, so
+ * a 9:16 Reel, a 9:16 Story and a 1:1 post landed in one row at three different heights — which
+ * reads as broken sizing rather than as a range of options. Naming the flagship keeps that page to
+ * a single shape, the same way a format-specific page is already scoped to exactly its own size.
+ */
+export const SOCIAL_HERO_FORMAT: Record<string, string> = {
+  youtube: "Thumbnail",
+  instagram: "Post",
+  tiktok: "Cover",
+  pinterest: "Pin",
+  x: "Post image",
+  linkedin: "Post",
+};
 
 export const PLATFORM_SIZE_EXAMPLES: Record<string, SizeExample[]> = {
   youtube: [

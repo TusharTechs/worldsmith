@@ -136,6 +136,20 @@ export async function storeAudio(bytes: Buffer, mimeType: string, ext: string): 
 
 
 /**
+ * Ids already proven absent, so a repeat request answers instantly.
+ *
+ * A miss costs a Storage round-trip (~500ms observed). The gallery renders many tiles at once and
+ * an orphaned record — an asset deleted, or a run whose file was cleaned up — is re-requested on
+ * every render, so without this a handful of dead ids stall the whole grid.
+ *
+ * Caching a miss is safe because ids are minted at write time (`storeImage`/`storeVideo`/
+ * `storeAudio` are the only writers here, each generating a fresh unique id), so no caller can
+ * hold an id before its file exists. The TTL is a backstop, not a correctness requirement.
+ */
+const missCache = new Map<string, number>();
+const MISS_TTL_MS = 60_000;
+
+/**
  * Read a stored asset by id, wherever it lives.
  *
  * Asset URIs are stable route references, so the route has to resolve them: local `.data` in
@@ -145,6 +159,10 @@ export async function readStoredAsset(
   kind: "images" | "videos" | "audio",
   id: string
 ): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const cacheKey = `${kind}/${id}`;
+  const missedAt = missCache.get(cacheKey);
+  if (missedAt && Date.now() - missedAt < MISS_TTL_MS) return null;
+
   const exts = kind === "images" ? ["png"] : kind === "videos" ? ["mp4"] : ["wav", "mp3", "ogg"];
   const typeFor = (ext: string) =>
     ext === "png" ? "image/png" : ext === "mp4" ? "video/mp4"
@@ -169,5 +187,6 @@ export async function readStoredAsset(
       }
     }
   }
+  missCache.set(cacheKey, Date.now());
   return null;
 }

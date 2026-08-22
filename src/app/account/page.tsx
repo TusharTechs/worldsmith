@@ -9,9 +9,9 @@ import { serverListProjects } from "@/app/actions/store";
 import { serverListToolRuns } from "@/app/actions/tools";
 import type { Project } from "@/core/project-schemas";
 import { PLANS, FREE_TRIAL_CREDITS } from "@/core/credits";
-import { Crown, LogOut, Settings, Clapperboard, Film, ImageIcon, Download } from "lucide-react";
+import { Crown, LogOut, Settings, Clapperboard, ImageIcon } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { downloadFromUri, assetFilename } from "@/lib/download";
+import { CreationTile } from "@/components/tools/CreationTile";
 
 const PLAN_CAP: Record<string, number> = {
   free: FREE_TRIAL_CREDITS,
@@ -183,33 +183,7 @@ export default function AccountPage() {
                   />
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {creations.map((r) => (
-                      <div key={r.id} className="group bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden relative">
-                        {r.kind === "image" && r.uri && <img src={r.uri} alt="" className="w-full aspect-square object-cover" />}
-                        {r.kind === "video" && r.uri && <video src={r.uri} className="w-full aspect-square object-cover" muted />}
-                        {r.kind === "audio" && (
-                          <div className="w-full aspect-square bg-zinc-900 flex items-center justify-center text-zinc-600"><Film size={20} /></div>
-                        )}
-                        {r.kind === "text" && (
-                          <div className="w-full aspect-square bg-zinc-900 flex items-center justify-center text-zinc-600"><ImageIcon size={20} /></div>
-                        )}
-                        {r.uri && (
-                          <button
-                            onClick={() => downloadFromUri(r.uri, assetFilename(r.tool, r.prompt))}
-                            title="Download"
-                            className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-zinc-950/80 border border-zinc-700 flex items-center justify-center text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-800"
-                          >
-                            <Download size={14} />
-                          </button>
-                        )}
-                        <span className="absolute top-1 left-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 border border-zinc-800 text-zinc-300 uppercase">
-                          {r.tool}
-                        </span>
-                        <span className="absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 border border-zinc-800 text-cyan-300">
-                          −{r.credits}
-                        </span>
-                      </div>
-                    ))}
+                    {creations.map((r) => <CreationTile key={r.id} r={r} />)}
                   </div>
                 )}
               </section>

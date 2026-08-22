@@ -30,6 +30,11 @@ export function Gallery({
   const [active, setActive] = useState<number | null>(null);
   if (examples.length === 0) return null;
 
+  // Tailwind's gap-2.5 in pixels, needed to size each row's bound.
+  const GAP = 10;
+  const mediaRow = !examples.some((e) => e.kind === "compare" || e.kind === "text");
+  const rows = mediaRow ? chunkRows(examples, compact ? 3 : 3) : [examples];
+
   return (
     <section className={compact ? "" : "mt-16"}>
       {!compact && (
@@ -40,17 +45,31 @@ export function Gallery({
           </span>
         </div>
       )}
-      {/* Column count follows the number of examples so a short set fills its row instead of
-          leaving a hole — one example goes full-bleed, three sit in threes, four in a 2×2. */}
-      {/* items-start matters: with mixed aspect ratios in one row, stretched grid cells left a
-          band of dead space under every tile shorter than the tallest one. Each figure should be
-          exactly as tall as its own image. */}
-      <div className={`grid items-start gap-2.5 ${
-        examples.some((e) => e.kind === "compare" || e.kind === "text")
-          ? "grid-cols-1"
-          : gridCols(examples.length, compact)
-      }`}>
-        {examples.map((ex, i) => {
+      {/* A justified row, not a grid of equal columns.
+          Equal columns only look right when every example is the same shape. Once tiles carry
+          their true dimensions, a 16:9 still beside a 1:1 and a 4:5 gave three different heights
+          in one row, which reads as broken sizing.
+
+          So widths are shared out in proportion to each tile's aspect (flex-grow = aspect, basis
+          0). Every tile then resolves to the same height whatever mix of shapes is in the row, and
+          the row always fills its canvas exactly. Height is *derived* from the available width
+          rather than fixed — fixing it made two 16:9 clips 747px wide each, which overflowed and
+          wrapped. To honour the height cap the container is bounded instead: at the widest, the
+          row is exactly CAP tall, and below that it shrinks with the canvas. */}
+      <div className="space-y-2.5">
+        {rows.map((row, ri) => (
+        <div
+          key={ri}
+          style={mediaRow ? { maxWidth: CAP(compact) * rowAspect(row) + GAP * (row.length - 1) } : undefined}
+          className={
+            mediaRow
+              ? "mx-auto flex items-start gap-2.5"
+              : "grid grid-cols-1 items-start gap-2.5"
+          }
+        >
+        {row.map((ex) => {
+          // Hover state is keyed on position in the full set, not in this row.
+          const i = examples.indexOf(ex);
           const usable = !!ex.prompt && !!onUsePrompt;
 
           // Two kinds don't fit the hover-a-thumbnail pattern: a comparison needs to be draggable,
@@ -100,69 +119,46 @@ export function Gallery({
             );
           }
 
+          // Height is shared across the row; width is whatever this example's shape asks for.
+          // maxWidth keeps an extreme panorama (a 6:1 banner) from running past the canvas.
+          const ratio = ex.width && ex.height
+            ? `${ex.width} / ${ex.height}`
+            : examples.length === 1 ? "4 / 3" : "1 / 1";
+
           return (
             <figure
               key={ex.uri}
               onMouseEnter={() => setActive(i)}
               onMouseLeave={() => setActive(null)}
-              className="group relative overflow-hidden rounded-xl border border-white/[0.07] bg-zinc-900"
+              style={{ flexGrow: ex.width && ex.height ? ex.width / ex.height : 1, flexBasis: 0, aspectRatio: ratio }}
+              className="group relative min-w-0 overflow-hidden rounded-xl border border-white/[0.07] bg-zinc-900"
             >
+              {/* The figure already carries the shape, so the media just fills it — no
+                  per-branch aspect juggling, and nothing can disagree about the tile's size. */}
               {ex.kind === "video" ? (
-                /* Clips honour their declared shape, exactly like stills. Forcing aspect-square
-                   here rendered a 720×1280 Short as a landscape crop of a vertical video — the
-                   file was right and the tile was lying about it. */
-                <div className="flex w-full justify-center bg-black/40">
-                  <video
-                    src={ex.uri}
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    onMouseEnter={(e) => void e.currentTarget.play().catch(() => {})}
-                    onLoadedMetadata={(e) => {
-                      // Park on a frame with picture in it. These clips fade up from black, so a
-                      // poster at t=0 renders as an empty tile — the same trap the hero reel hit.
-                      const v = e.currentTarget;
-                      if (v.duration > 1.2) v.currentTime = 1;
-                    }}
-                    onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 1; }}
-                    style={{
-                      maxHeight: CAP(compact),
-                      ...(ex.width && ex.height ? { aspectRatio: `${ex.width} / ${ex.height}` } : {}),
-                    }}
-                    className={`h-auto w-auto max-w-full object-cover ${
-                      ex.width && ex.height ? "" : examples.length === 1 ? "aspect-[4/3]" : "aspect-square"
-                    }`}
-                  />
-                </div>
-              ) : ex.width && ex.height ? (
-                /* The tile keeps the format's true ratio, but capped in height and centred:
-                   a 9:16 Story rendered at full canvas width came out roughly 1800px tall and
-                   pushed everything else off screen. Aspect-ratio plus a max-height shrinks the
-                   whole box proportionally, so the shape survives and the tile stays readable. */
-                <div className="flex w-full justify-center bg-black/40">
-                  <img
-                    src={ex.uri}
-                    alt={ex.prompt ?? ex.caption ?? ""}
-                    loading="lazy"
-                    style={{ aspectRatio: `${ex.width} / ${ex.height}`, maxHeight: CAP(compact) }}
-                    className="h-auto w-auto max-w-full object-cover"
-                  />
-                </div>
+                <video
+                  src={ex.uri}
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  onMouseEnter={(e) => void e.currentTarget.play().catch(() => {})}
+                  onLoadedMetadata={(e) => {
+                    // Park on a frame with picture in it. These clips fade up from black, so a
+                    // poster at t=0 renders as an empty tile — the same trap the hero reel hit.
+                    const v = e.currentTarget;
+                    if (v.duration > 1.2) v.currentTime = 1;
+                  }}
+                  onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 1; }}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                /* Same height cap as the dimensioned branch. Without it an example that carries no
-                   declared size — a Cast character sheet, say — filled the full column width and
-                   pushed the whole row past 700px, which then stretched the controls panel beside
-                   it to match. */
-                <div className="flex w-full justify-center bg-black/40">
-                  <img
-                    src={ex.uri}
-                    alt={ex.prompt ?? ex.caption ?? ""}
-                    loading="lazy"
-                    style={{ maxHeight: CAP(compact) }}
-                    className={`h-auto w-auto max-w-full object-cover ${examples.length === 1 ? "aspect-[4/3]" : "aspect-square"}`}
-                  />
-                </div>
+                <img
+                  src={ex.uri}
+                  alt={ex.prompt ?? ex.caption ?? ""}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
               )}
 
               {ex.kind === "video" && active !== i && (
@@ -191,18 +187,39 @@ export function Gallery({
             </figure>
           );
         })}
+        </div>
+        ))}
       </div>
     </section>
   );
 }
 
+/** Summed aspect of a row — the row is exactly this many times as wide as it is tall, plus gaps. */
+function rowAspect(row: ToolExample[]): number {
+  return row.reduce((sum, e) => sum + (e.width && e.height ? e.width / e.height : 1), 0);
+}
+
 /**
- * Columns = number of examples, so a set always sits in exactly one row.
+ * Split a set into rows of at most `max`, balanced.
  *
- * A separate heuristic used to pick columns independently of how many examples a format has, so
- * four tiles wrapped into a 2x2 while the registry believed they were a single row. Since
- * `exampleTarget` already caps a format at three, mirroring the count here keeps the two in step.
+ * One flex row justifies beautifully but only for a handful of tiles — seven in a single row came
+ * out 140px tall, too small to show anything. Splitting at three keeps tiles legible, and
+ * balancing (7 becomes 3/2/2, not 3/3/1) avoids a stranded last row rendering one tile at full
+ * height while the rows above it sit much smaller.
  */
-function gridCols(n: number, _compact: boolean): string {
-  return n >= 3 ? "grid-cols-3" : n === 2 ? "grid-cols-2" : "grid-cols-1";
+function chunkRows(items: ToolExample[], max: number): ToolExample[][] {
+  const n = items.length;
+  if (n <= max) return [items];
+  const rowCount = Math.ceil(n / max);
+  const base = Math.floor(n / rowCount);
+  let extra = n % rowCount;
+  const out: ToolExample[][] = [];
+  let at = 0;
+  for (let r = 0; r < rowCount; r++) {
+    const take = base + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra--;
+    out.push(items.slice(at, at + take));
+    at += take;
+  }
+  return out;
 }

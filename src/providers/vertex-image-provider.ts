@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ImageGenerationProvider, ImageGenerationRequest, GeneratedImage } from "./image-provider";
 import { storeImage, fetchReferenceBytes } from "./image-storage";
-import { VertexConfig } from "./vertex-provider";
+import { VertexConfig, vertexClientOptions } from "./vertex-provider";
 import { withRetry } from "./retry";
 
 export class VertexImageProvider implements ImageGenerationProvider {
@@ -12,8 +12,7 @@ export class VertexImageProvider implements ImageGenerationProvider {
   private perImageCost: number;
 
   constructor(cfg: VertexConfig) {
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.defaultModel = process.env.VERTEX_IMAGE_MODEL ?? "gemini-2.5-flash-image";
     this.perImageCost = parseFloat(process.env.VERTEX_IMAGE_COST_USD ?? "0.039");
   }

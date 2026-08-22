@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { VLMProvider, VLMImageInput } from "./vlm-provider";
-import { resolveVertexConfig } from "./vertex-provider";
+import { resolveVertexConfig, vertexClientOptions } from "./vertex-provider";
 
 export class GeminiVLMProvider implements VLMProvider {
   name = "vertex-vlm";
@@ -11,8 +11,7 @@ export class GeminiVLMProvider implements VLMProvider {
 
   constructor() {
     const cfg = resolveVertexConfig();
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.model = process.env.VLM_MODEL ?? "gemini-2.5-flash";
     this.perCallCost = parseFloat(process.env.VLM_COST_USD ?? "0.001");
   }

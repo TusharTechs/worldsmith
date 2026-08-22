@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { DistributionProvider } from "./distribution-provider";
 import { DistributionPackage, DistributionPackageSchema } from "@/core/distribution-schemas";
 import { Project } from "@/core/project-schemas";
-import { resolveVertexConfig } from "./vertex-provider";
+import { resolveVertexConfig, vertexClientOptions } from "./vertex-provider";
 import { withRetry } from "./retry";
 
 export class GeminiDistributionProvider implements DistributionProvider {
@@ -13,8 +13,7 @@ export class GeminiDistributionProvider implements DistributionProvider {
 
   constructor() {
     const cfg = resolveVertexConfig();
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.model = process.env.DISTRIBUTION_MODEL ?? "gemini-2.5-flash";
   }
 

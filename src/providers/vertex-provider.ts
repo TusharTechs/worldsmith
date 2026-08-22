@@ -15,7 +15,47 @@ export interface VertexConfig {
   projectId: string;
   location: string;
   serviceAccountPath: string;
+  /** Inline service-account credentials, for hosts with no writable filesystem. */
+  credentials?: Record<string, unknown>;
   model?: string;
+}
+
+/**
+ * Client options shared by every Vertex-backed provider.
+ *
+ * Credentials arrive one of two ways. Locally it is a file on disk and the SDK picks it up through
+ * GOOGLE_APPLICATION_CREDENTIALS. On a serverless host there is no such file — the repo cannot ship
+ * one and the filesystem is read-only — so the same JSON is supplied inline and handed to the auth
+ * library directly. Without this, every Vertex call fails in deployment while working locally.
+ */
+export function vertexClientOptions(cfg: VertexConfig) {
+  if (cfg.credentials) {
+    return {
+      vertexai: true as const,
+      project: cfg.projectId,
+      location: cfg.location,
+      googleAuthOptions: { credentials: cfg.credentials },
+    };
+  }
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
+  return { vertexai: true as const, project: cfg.projectId, location: cfg.location };
+}
+
+/**
+ * Service-account JSON supplied through the environment rather than a file.
+ *
+ * Falls back to FIREBASE_SERVICE_ACCOUNT_JSON because it is the same service account in practice,
+ * and requiring it twice is a deployment footgun.
+ */
+function parseInlineCredentials(): Record<string, unknown> | undefined {
+  const raw = process.env.VERTEX_SERVICE_ACCOUNT_JSON ?? process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error("[VERTEX] service-account JSON in the environment is not valid JSON — ignoring it.");
+    return undefined;
+  }
 }
 
 export function resolveVertexConfig(): VertexConfig {
@@ -24,6 +64,7 @@ export function resolveVertexConfig(): VertexConfig {
     projectId: process.env.VERTEX_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
     location: process.env.VERTEX_LOCATION ?? "us-central1",
     serviceAccountPath: path.resolve(process.cwd(), raw),
+    credentials: parseInlineCredentials(),
     model: process.env.VERTEX_LLM_MODEL ?? "gemini-2.5-flash",
   };
 }
@@ -34,8 +75,7 @@ export class VertexProvider implements LLMProvider {
 
   constructor(cfg: VertexConfig) {
     if (!cfg.projectId) throw new Error("Vertex requires VERTEX_PROJECT_ID (or NEXT_PUBLIC_FIREBASE_PROJECT_ID)");
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.model = cfg.model ?? "gemini-2.5-flash";
   }
 

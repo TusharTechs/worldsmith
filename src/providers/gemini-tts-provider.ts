@@ -4,7 +4,7 @@ import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import { AudioProvider, SpeechRequest, GeneratedAudio } from "./audio-provider";
 import { storeAudio } from "./image-storage";
-import { resolveVertexConfig } from "./vertex-provider";
+import { resolveVertexConfig, vertexClientOptions } from "./vertex-provider";
 import { withRetry } from "./retry";
 import { runFfmpeg } from "@/core/ffmpeg";
 
@@ -65,8 +65,7 @@ export class GeminiTTSProvider implements AudioProvider {
 
   constructor() {
     const cfg = resolveVertexConfig();
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.model = process.env.TTS_MODEL ?? "gemini-2.5-flash-preview-tts";
     this.perCallCost = parseFloat(process.env.TTS_COST_USD ?? "0.001");
   }

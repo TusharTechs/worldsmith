@@ -186,6 +186,9 @@ VERTEX_PROJECT_ID=your-gcp-project
 VERTEX_LOCATION=us-central1
 VERTEX_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
 
+# Deploying to a serverless host instead? There is no file to point at, so paste
+# the same service-account JSON into VERTEX_SERVICE_ACCOUNT_JSON and omit the path.
+
 # Providers — all Google, or "mock" to run fully offline
 LLM_PROVIDER=vertex
 IMAGE_PROVIDER=vertex

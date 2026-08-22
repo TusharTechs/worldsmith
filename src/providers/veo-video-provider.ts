@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { VideoGenerationProvider, VideoGenerationRequest, GeneratedVideo } from "./video-provider";
 import { storeVideo } from "./image-storage";
-import { resolveVertexConfig } from "./vertex-provider";
+import { resolveVertexConfig, vertexClientOptions } from "./vertex-provider";
 import { withRetry } from "./retry";
 
 // Pricing table: put "fast" first so veo-3.1-fast matches the cheaper rate
@@ -19,8 +19,7 @@ export class VeoVideoProvider implements VideoGenerationProvider {
 
   constructor() {
     const cfg = resolveVertexConfig();
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = cfg.serviceAccountPath;
-    this.client = new GoogleGenAI({ vertexai: true, project: cfg.projectId, location: cfg.location });
+    this.client = new GoogleGenAI(vertexClientOptions(cfg));
     this.defaultModel = process.env.VEO_MODEL ?? "veo-3.1-generate-001";
     this.perSecond =
       parseFloat(process.env.VEO_COST_PER_SECOND ?? "") ||

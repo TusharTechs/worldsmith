@@ -106,3 +106,71 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ws-marquee-track { animation: none; }
 }
+
+/* ── Range inputs ─────────────────────────────────────────────────────────────
+   Left native, these render as the OS default — a bright system blue that reads
+   as an unstyled form control on a dark product. The track is painted from a CSS
+   variable the component sets to the current fill percentage, so the filled part
+   uses the brand gradient rather than the platform accent. */
+.ws-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+.ws-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #22d3ee 0%, #a78bfa var(--ws-fill, 50%),
+    rgba(255, 255, 255, 0.1) var(--ws-fill, 50%), rgba(255, 255, 255, 0.1) 100%
+  );
+}
+.ws-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.ws-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #22d3ee, #a78bfa);
+}
+.ws-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #18181b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.12s ease;
+}
+.ws-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #18181b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.ws-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.ws-range:focus-visible::-webkit-slider-thumb { outline: 2px solid #22d3ee; outline-offset: 2px; }
+
+/* Colour swatches: the native control keeps its own chrome and padding. */
+.ws-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.ws-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.ws-swatch::-webkit-color-swatch { border: none; border-radius: 7px; }
+.ws-swatch::-moz-color-swatch { border: none; border-radius: 7px; }

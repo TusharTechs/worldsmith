@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TextLayer, TEXTKIT_FONTS, TEXTKIT_PRESETS, renderLayers, layerMetrics, defaultLayer } from "@/core/textkit";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 interface Props {
   imageUri: string;
@@ -283,7 +284,7 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
                 <div className="grid grid-cols-2 gap-1">
                   {Object.keys(TEXTKIT_PRESETS).map((p) => (
                     <button key={p} onClick={() => update(TEXTKIT_PRESETS[p])}
-                      className="py-1 text-[10px] font-mono border border-zinc-700 rounded hover:bg-zinc-800 text-zinc-300">
+                      className="rounded-lg border border-white/[0.09] py-1.5 text-[10px] font-mono text-zinc-300 transition-colors hover:border-white/25 hover:bg-white/[0.04] hover:text-white">
                       {p}
                     </button>
                   ))}
@@ -306,61 +307,79 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
 
               <label className="block space-y-1">
                 <span className="text-[10px] uppercase tracking-widest text-zinc-500">Font</span>
-                <select value={selected.font} onChange={(e) => update({ font: e.target.value })}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-200">
-                  {Object.entries(TEXTKIT_FONTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
+                <Dropdown
+                  full
+                  ariaLabel="Font"
+                  value={selected.font}
+                  onChange={(v) => update({ font: v })}
+                  options={Object.entries(TEXTKIT_FONTS).map(([k, v]) => ({ value: k, label: v.label, fontFamily: v.family }))}
+                />
               </label>
 
-              <Slider label={`Size · ${selected.sizePct}%`} min={4} max={30} step={0.5} value={selected.sizePct} onChange={(v) => update({ sizePct: v })} />
-              <Slider label={`Outline · ${selected.strokeWidthPct}%`} min={0} max={20} step={0.5} value={selected.strokeWidthPct} onChange={(v) => update({ strokeWidthPct: v })} />
-              <Slider label={`Letter spacing · ${selected.letterSpacingPct}`} min={0} max={30} step={1} value={selected.letterSpacingPct} onChange={(v) => update({ letterSpacingPct: v })} />
-              <Slider label={`Rotation · ${selected.rotationDeg}°`} min={-45} max={45} step={1} value={selected.rotationDeg} onChange={(v) => update({ rotationDeg: v })} />
+              <Slider label="Size" unit="%" min={4} max={30} step={0.5} value={selected.sizePct} onChange={(v) => update({ sizePct: v })} />
+              <Slider label="Outline" unit="%" min={0} max={20} step={0.5} value={selected.strokeWidthPct} onChange={(v) => update({ strokeWidthPct: v })} />
+              <Slider label="Letter spacing" min={0} max={30} step={1} value={selected.letterSpacingPct} onChange={(v) => update({ letterSpacingPct: v })} />
+              <Slider label="Rotation" unit="°" min={-45} max={45} step={1} value={selected.rotationDeg} onChange={(v) => update({ rotationDeg: v })} />
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="space-y-1 block">
                   <span className="text-[10px] uppercase tracking-widest text-zinc-500">Fill</span>
                   <input type="color" value={selected.color} onChange={(e) => update({ color: e.target.value })}
-                    className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded" />
+                    className="ws-swatch h-9 w-full rounded-lg border border-white/[0.09]" />
                 </label>
                 <label className="space-y-1 block">
                   <span className="text-[10px] uppercase tracking-widest text-zinc-500">Outline</span>
                   <input type="color" value={selected.strokeColor} onChange={(e) => update({ strokeColor: e.target.value })}
-                    className="w-full h-8 bg-zinc-950 border border-zinc-800 rounded" />
+                    className="ws-swatch h-9 w-full rounded-lg border border-white/[0.09]" />
                 </label>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="space-y-1 block">
                   <span className="text-[10px] uppercase tracking-widest text-zinc-500">Shadow</span>
-                  <select value={selected.shadow} onChange={(e) => update({ shadow: e.target.value as TextLayer["shadow"] })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-200">
-                    <option value="none">None</option>
-                    <option value="soft">Soft</option>
-                    <option value="glow">Neon glow</option>
-                  </select>
+                  <Dropdown
+                    full
+                    ariaLabel="Shadow"
+                    value={selected.shadow}
+                    onChange={(v) => update({ shadow: v as TextLayer["shadow"] })}
+                    options={[
+                      { value: "none", label: "None" },
+                      { value: "soft", label: "Soft" },
+                      { value: "glow", label: "Neon glow" },
+                    ]}
+                  />
                 </label>
                 <label className="space-y-1 block">
                   <span className="text-[10px] uppercase tracking-widest text-zinc-500">Weight</span>
-                  <select value={selected.weight} onChange={(e) => update({ weight: parseInt(e.target.value) })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-200">
-                    <option value={400}>Regular</option>
-                    <option value={700}>Bold</option>
-                    <option value={900}>Black</option>
-                  </select>
+                  <Dropdown
+                    full
+                    ariaLabel="Weight"
+                    value={String(selected.weight)}
+                    onChange={(v) => update({ weight: parseInt(v) })}
+                    options={[
+                      { value: "400", label: "Regular" },
+                      { value: "700", label: "Bold" },
+                      { value: "900", label: "Black" },
+                    ]}
+                  />
                 </label>
               </div>
 
               <div className="flex gap-2">
                 <Toggle on={selected.uppercase} label="AA" onClick={() => update({ uppercase: !selected.uppercase })} />
                 <Toggle on={selected.italic} label="Italic" onClick={() => update({ italic: !selected.italic })} />
-                <select value={selected.align} onChange={(e) => update({ align: e.target.value as TextLayer["align"] })}
-                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-1 text-xs text-zinc-200"
-                  title="Aligns lines within the block (visible with multi-line text)">
-                  <option value="center">Center</option>
-                  <option value="left">Left</option>
-                  <option value="right">Right</option>
-                </select>
+                <Dropdown
+                  full
+                  ariaLabel="Align lines within the block"
+                  className="flex-1"
+                  value={selected.align}
+                  onChange={(v) => update({ align: v as TextLayer["align"] })}
+                  options={[
+                    { value: "center", label: "Center" },
+                    { value: "left", label: "Left" },
+                    { value: "right", label: "Right" },
+                  ]}
+                />
               </div>
 
               <button
@@ -391,14 +410,24 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   );
 }
 
-function Slider({ label, min, max, step, value, onChange }: {
-  label: string; min: number; max: number; step: number; value: number; onChange: (v: number) => void;
+function Slider({ label, value, unit, min, max, step, onChange }: {
+  label: string; value: number; unit?: string; min: number; max: number; step: number; onChange: (v: number) => void;
 }) {
+  // The filled portion is painted from this, so the track shows the brand gradient up to the
+  // thumb instead of the platform's accent colour across the whole bar.
+  const fill = ((value - min) / (max - min)) * 100;
   return (
-    <label className="block space-y-1">
-      <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))} className="w-full" />
+    <label className="block">
+      <span className="flex items-baseline justify-between">
+        <span className="text-[10px] uppercase tracking-widest text-zinc-500">{label}</span>
+        <span className="font-mono text-[10px] tabular-nums text-zinc-400">{value}{unit ?? ""}</span>
+      </span>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        style={{ "--ws-fill": `${fill}%` } as React.CSSProperties}
+        className="ws-range mt-0.5"
+      />
     </label>
   );
 }

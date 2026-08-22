@@ -65,17 +65,40 @@ export function addCycle(from: number, cycle: string): number {
   return d.getTime();
 }
 
+/**
+ * The next cycle boundary at or after now, starting from an activation date.
+ *
+ * A plan bought several months ago should show its *next* renewal, not one that has already
+ * passed, so the cycle is advanced until it lands in the future.
+ */
+function rollForward(from: number, cycle: string): number {
+  let next = addCycle(from, cycle);
+  let guard = 0;
+  while (next <= Date.now() && guard++ < 240) next = addCycle(next, cycle);
+  return next;
+}
+
 /** Plan, cycle and renewal date together, so the UI needs one round trip rather than three. */
 export async function getUserAccount(uid: string): Promise<{
   credits: number; plan: string; planCycle: string; renewsAt: number | null; subActive: boolean;
 }> {
   const snap = await userRef(uid).get();
   const d = snap.exists ? (snap.data() ?? {}) : {};
+  const cycle = d.planCycle ?? "monthly";
+  // Subscriptions activated before renewsAt existed only recorded the activation time — under the
+  // old field `renewalAt`, which despite the name never held a renewal date. Derive one at read
+  // time rather than migrating, so an existing subscriber sees a date without re-subscribing.
+  const activated = typeof d.startedAt === "number" ? d.startedAt
+    : typeof d.renewalAt === "number" ? d.renewalAt
+    : null;
+  const renewsAt = typeof d.renewsAt === "number" ? d.renewsAt
+    : activated != null && (d.plan ?? "free") !== "free" ? rollForward(activated, cycle)
+    : null;
   return {
     credits: d.credits ?? 0,
     plan: d.plan ?? "free",
-    planCycle: d.planCycle ?? "monthly",
-    renewsAt: typeof d.renewsAt === "number" ? d.renewsAt : null,
+    planCycle: cycle,
+    renewsAt,
     subActive: d.subActive !== false,
   };
 }

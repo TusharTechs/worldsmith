@@ -8,13 +8,13 @@ import { LanguageMenu } from "./LanguageMenu";
 /** Shared credits + account chip — was hand-duplicated across Landing/Studio/Tools.
  * Signed in: avatar → dropdown (credits, plan, profile, language, sign out).
  * Signed out: language switcher + separate Login / Sign up buttons. */
-export function AuthChip({ credits, plan }: { credits?: number | null; plan?: string }) {
+export function AuthChip({ credits, plan, renewsAt }: { credits?: number | null; plan?: string; renewsAt?: number | null }) {
   const auth = useAuth();
   const { t } = useLanguage();
   return (
     <div className="flex items-center gap-2 shrink-0">
       {auth.user ? (
-        <AccountMenu credits={credits} plan={plan} />
+        <AccountMenu credits={credits} plan={plan} renewsAt={renewsAt} />
       ) : (
         <>
           <LanguageMenu />

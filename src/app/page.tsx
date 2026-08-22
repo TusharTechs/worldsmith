@@ -128,7 +128,7 @@ export default function Landing() {
   const { t, td } = useLanguage();
   const [annual, setAnnual] = useState(true);
   const auth = useAuth();
-  const [acct, setAcct] = useState<{ credits: number; plan: string } | null>(null);
+  const [acct, setAcct] = useState<{ credits: number; plan: string; renewsAt: number | null } | null>(null);
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [claimBusy, setClaimBusy] = useState(false);
   const [verifySent, setVerifySent] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -179,7 +179,7 @@ export default function Landing() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <SiteHeader credits={acct?.credits} plan={acct?.plan} />
+      <SiteHeader credits={acct?.credits} plan={acct?.plan} renewsAt={acct?.renewsAt} />
 
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">

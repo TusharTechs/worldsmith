@@ -9,7 +9,7 @@
 
 *Google Cloud Agentic Cinema Hackathon — **Parallel** track*
 
-[Live demo](https://getworldsmith.com) · [Demo video](#demo-video) · [Architecture](#architecture)
+[Live demo](https://worldsmith.vercel.app) · [Demo video](#demo-video) · [Architecture](#architecture)
 
 </div>
 

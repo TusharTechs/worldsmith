@@ -142,7 +142,7 @@ export default function AccountSettingsPage() {
   if (!auth.user) {
     return (
       <main className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-        <SiteHeader credits={credits} plan={plan} />
+        <SiteHeader credits={credits} plan={plan} renewsAt={sub?.renewsAt} />
         <div className="max-w-lg mx-auto px-6 pt-32 text-center space-y-4">
           <h1 className="text-2xl font-light text-white">{t("account.notSignedIn")}</h1>
           <button onClick={() => auth.openAuth("in")} className="px-6 py-3 ws-gradient-bg text-black font-semibold text-xs uppercase tracking-widest rounded">
@@ -155,7 +155,7 @@ export default function AccountSettingsPage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <SiteHeader credits={credits} plan={plan} />
+      <SiteHeader credits={credits} plan={plan} renewsAt={sub?.renewsAt} />
       <div className="max-w-4xl mx-auto px-6 pt-28 pb-24">
         <a href="/account" className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 hover:text-white">← Back to profile</a>
         <h1 className="mt-4 text-2xl font-light text-white">Manage account</h1>

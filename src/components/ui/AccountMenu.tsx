@@ -34,7 +34,7 @@ function nextTier(planKey: string): string | null {
 }
 
 /** Signed-in avatar → dropdown panel (credits, plan, profile, language, sign out) — Higgsfield-style. */
-export function AccountMenu({ credits, plan }: { credits?: number | null; plan?: string }) {
+export function AccountMenu({ credits, plan, renewsAt }: { credits?: number | null; plan?: string; renewsAt?: number | null }) {
   const auth = useAuth();
   const { locale, setLocale, t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -91,6 +91,12 @@ export function AccountMenu({ credits, plan }: { credits?: number | null; plan?:
             <div className="min-w-0">
               <p className="text-sm text-white truncate">{label}</p>
               <p className="text-xs text-zinc-500 truncate">{username ? `@${username} · ` : ""}{planLabel}</p>
+              {/* A paid plan should say when it renews without a trip to settings. */}
+              {planKey !== "free" && renewsAt != null && (
+                <p className="mt-0.5 truncate text-[10px] text-zinc-600">
+                  {t("account.renewsOn", { date: new Date(renewsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) })}
+                </p>
+              )}
             </div>
           </div>
 

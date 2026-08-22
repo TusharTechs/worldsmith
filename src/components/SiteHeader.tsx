@@ -98,7 +98,7 @@ const PLATFORM_NAV: { label: string; platform: PlatformKey; items: PlatformNavIt
  * Shared top nav — used on the landing page AND every tool page, so switching tools never
  * needs a persistent sidebar of "other tools": hover Image/Video/etc. from anywhere.
  */
-export function SiteHeader({ credits, plan, showcaseHref = "/#showcase" }: { credits?: number | null; plan?: string; showcaseHref?: string }) {
+export function SiteHeader({ credits, plan, renewsAt, showcaseHref = "/#showcase" }: { credits?: number | null; plan?: string; renewsAt?: number | null; showcaseHref?: string }) {
   const { t } = useLanguage();
   const catLabel = (label: string) => (CATEGORY_KEY[label] ? t(`nav.categories.${CATEGORY_KEY[label]}`) : label);
   const [navOpen, setNavOpen] = useState(false);
@@ -156,7 +156,7 @@ export function SiteHeader({ credits, plan, showcaseHref = "/#showcase" }: { cre
           <CommandPalette />
           <a href="/#pricing" className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 hover:text-white">{t("home.footer.links.pricing")}</a>
           <a href="/studio" className="px-4 py-2 bg-white text-black font-semibold text-xs uppercase tracking-widest rounded hover:bg-zinc-200 transition-colors">{t("billingSuccess.openStudio")}</a>
-          <AuthChip credits={credits} plan={plan} />
+          <AuthChip credits={credits} plan={plan} renewsAt={renewsAt} />
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export function SiteHeader({ credits, plan, showcaseHref = "/#showcase" }: { cre
       {navOpen && (
         <div className="md:hidden border-t border-zinc-800/60 bg-zinc-950/95 max-h-[75vh] overflow-y-auto">
           <div className="px-4 py-3 flex items-center justify-between border-b border-zinc-800/60">
-            <AuthChip credits={credits} plan={plan} />
+            <AuthChip credits={credits} plan={plan} renewsAt={renewsAt} />
           </div>
           <a href="/" className="flex items-center gap-2 px-4 py-3 text-xs uppercase tracking-widest text-zinc-300 border-b border-zinc-800/60">
             <Compass size={14} /> {t("nav.explore")}

@@ -38,7 +38,7 @@ Give it one sentence. A network of agents then:
 
 Expensive steps sit behind human approval gates, and every asset is costed in a transparent per-asset ledger.
 
-Beyond the full pipeline, **10 standalone tools** work on their own — Text→Image, Text→Video, Image→Video, Voiceover+Images→Video, Text→Speech, Image→Prompt, Upscale, Social Post, YouTube Kit, and **Cast** (build a character once, reuse it in any scene).
+Beyond the full pipeline, **11 standalone tools** work on their own — Text→Image, Text→Video, Image→Video, Voiceover+Images→Video, Text→Speech, Image→Prompt, Upscale, Social Post, YouTube Kit, Creative Text Editor, and **Cast** (build a character once, reuse it in any scene).
 
 ## Partner track: Parallel
 
@@ -73,27 +73,87 @@ SDKs: `@google/genai`, `@google/generative-ai`, `firebase`, `firebase-admin`.
 
 ## Architecture
 
+One idea enters. Five planning agents turn it into a production bible, a generation
+loop builds every asset and checks its own work, and a campaign leaves for eight
+destinations. No human step in between.
+
+```mermaid
+flowchart LR
+    IDEA(["An idea,<br/>one sentence"])
+    PLAN["<b>Planning</b><br/>five agents<br/>schema-validated"]
+    GEN["<b>Generation</b><br/>stills, then shots<br/>frame-conditioned"]
+    QC{"<b>Continuity QC</b><br/>matches the<br/>World Bible?"}
+    CUT["<b>Assembly</b><br/>trim · concat<br/>narration mixed"]
+    SHIP["<b>Distribution</b><br/>8 destinations<br/>7 rendered creatives"]
+    PAR[["Parallel<br/>Search"]]
+
+    IDEA --> PLAN --> GEN --> QC
+    QC -- "pass" --> CUT --> SHIP
+    QC -- "fail · bounded retry" --> GEN
+    PAR -. "trends · news<br/>audience signals" .-> PLAN
+
+    style IDEA fill:#22d3ee,stroke:#0891b2,color:#000
+    style PAR fill:#e879f9,stroke:#c026d3,color:#000
+    style QC fill:#fbbf24,stroke:#d97706,color:#000
+    style SHIP fill:#34d399,stroke:#059669,color:#000
 ```
-                    ┌──────────────── Parallel Search ── live web signals
-                    ▼
-  idea ──▶ Discover ──▶ Think ──▶ Create ──▶ Produce ──▶ Distribute ──▶ Learn
-                          │          │          │            │
-                       Gemini    World Bible   Veo 3.1    Gemini
-                      (Vertex)   (Firestore)  + VLM QC   (8 platforms)
-                                                  │
-                                              FFmpeg assembly
-```
+
+### The five planning agents
+
+Each one hands the next a validated object, not a blob of prose — so a later stage
+can rely on the shape of what it receives.
+
+| Agent | Produces |
+|---|---|
+| `research-agent` | Evidence gathered through **Parallel Search**, carrying its sources |
+| `opportunity-agent` | The angle actually worth making, argued from that evidence |
+| `world-builder-agent` | The World Bible — characters, locations, props, visual language |
+| `storyboard-agent` | Shots, with durations reconciled to the runtime you asked for |
+| `production-planner-agent` | Per-asset model and cost plan, before a cent is spent |
+
+### QC is a gate, not a report
+
+The difference between a demo and a system is what happens when a model gets it
+wrong. Every generated shot goes back to a vision model with the World Bible and
+is asked whether the character, location and look actually match. A pass moves
+forward; a fail regenerates that shot against the same reference, bounded so a
+stubborn shot can't burn the budget. Continuity is enforced rather than hoped for.
+
+### Every provider is a seam
+
+| Seam | Real | Offline |
+|---|---|---|
+| LLM | Gemini on Vertex AI | `mock` |
+| Image | `gemini-2.5-flash-image` | `mock` |
+| Video | Veo 3.1 | `mock` |
+| Vision QC | Gemini VLM | `mock` |
+| Speech | Gemini TTS | `mock` |
+| Research | **Parallel Search** | `mock` |
+| Distribution | Gemini | `mock` |
+
+Each sits behind an interface chosen by one environment variable, so the entire
+pipeline — planning, generation, QC, assembly, campaign — runs end to end with
+zero API spend. That is how this was developed, and how you can run it now.
+
+### Decisions worth pointing at
+
+| | |
+|---|---|
+| **Credits are reserved, not billed** | A shortfall stops the run *before* a provider is called, and anything that produces nothing is refunded. No free generation, no charging for failures. |
+| **Assets get stable references** | Signed URLs expire; a 7-day URL persisted into a database is a 404 with a delay fuse. Assets resolve through a route that reads local disk or cloud storage. |
+| **Uploads bypass the server-action boundary** | Data URLs above a few hundred KB blow the framework's argument limit, which silently broke every image-taking tool for real photographs. References upload as multipart and travel as ids. |
+| **Concurrent writes are serialized** | The cost ledger and generation status are read-modify-write; retrying an asset mid-run would otherwise clobber the run's own accounting. |
+
+### Where things live
 
 | Path | Role |
 |---|---|
-| `src/core/` | Orchestrator, asset director, creative director, credits, TextKit |
-| `src/providers/` | Swappable provider seams (LLM, image, video, VLM, audio, research) |
-| `src/agents/` | Per-stage agent implementations |
-| `src/store/` | Firestore + local project/asset stores |
+| `src/agents/` | The five planning agents |
+| `src/core/` | Orchestrator, asset director, QC director, assembler, creative director, credits, TextKit |
+| `src/providers/` | Every provider seam, real and mock |
+| `src/store/` | Firestore and local project/asset stores, per-project locking |
 | `src/app/studio/` | The autonomous pipeline UI |
-| `src/app/tools/` | The 10 standalone tools |
-
-Every provider sits behind an interface, so mock and real implementations are interchangeable — the whole pipeline runs offline in mock mode for development.
+| `src/app/tools/` | The 11 standalone tools |
 
 ## Run it locally
 

@@ -328,7 +328,7 @@ export const ja: PartialDictionary = {
     signInToAttach: "この購入をアカウントに反映するにはサインインしてください。",
     signInToClaim: "サインインして反映する",
     openStudio: "スタジオを開く",
-    toolbox: "ツールボックス",
+    subscription: "サブスクリプション",
     home: "ホーム",
   },
 } as const;

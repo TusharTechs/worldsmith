@@ -77,7 +77,10 @@ export const en: {
       networkFailed: string; configProblem: string; generic: string;
     };
   };
-  billingSuccess: { title: string; applying: string; signInToAttach: string; signInToClaim: string; openStudio: string; toolbox: string; home: string };
+  billingSuccess: { title: string; applying: string; applyingNote: string; signInToAttach: string;
+    signInToClaim: string; openStudio: string; subscription: string; home: string; applied: string;
+    balanceNow: string; credits: string; attentionTitle: string; attentionBody: string;
+    technicalDetails: string; stayHere: string };
 } = {
   nav: {
     explore: "Explore",
@@ -413,12 +416,20 @@ export const en: {
   },
   billingSuccess: {
     title: "Thank you — payment received",
-    applying: "Applying your purchase to this account…",
+    applying: "Applying your purchase…",
+    applyingNote: "This usually takes a few seconds.",
     signInToAttach: "Sign in to attach this purchase to your account.",
     signInToClaim: "Sign in to claim",
     openStudio: "Open Studio",
-    toolbox: "Toolbox",
+    subscription: "Subscription",
     home: "Home",
+    applied: "Applied to your account",
+    balanceNow: "Balance now",
+    credits: "credits",
+    attentionTitle: "Payment received — one more step",
+    attentionBody: "We couldn't match this payment to your account automatically. Open the pricing page and use \u201CAlready paid? Claim purchase\u201D.",
+    technicalDetails: "Technical details",
+    stayHere: "Stay on this page while we apply it.",
   },
 };
 

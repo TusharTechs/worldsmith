@@ -328,7 +328,7 @@ export const hi: PartialDictionary = {
     signInToAttach: "इस खरीद को अपने अकाउंट से जोड़ने के लिए साइन इन करें।",
     signInToClaim: "क्लेम करने के लिए साइन इन करें",
     openStudio: "स्टूडियो खोलें",
-    toolbox: "टूलबॉक्स",
+    subscription: "सदस्यता",
     home: "होम",
   },
 } as const;

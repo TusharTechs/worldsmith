@@ -328,7 +328,7 @@ export const zh: PartialDictionary = {
     signInToAttach: "登录后即可将此次购买关联到你的账户。",
     signInToClaim: "登录以认领",
     openStudio: "打开 Studio",
-    toolbox: "工具箱",
+    subscription: "订阅",
     home: "首页",
   },
 } as const;

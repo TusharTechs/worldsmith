@@ -328,7 +328,7 @@ export const es: PartialDictionary = {
     signInToAttach: "Inicia sesión para vincular esta compra a tu cuenta.",
     signInToClaim: "Inicia sesión para reclamar",
     openStudio: "Abrir Estudio",
-    toolbox: "Herramientas",
+    subscription: "Suscripción",
     home: "Inicio",
   },
 } as const;

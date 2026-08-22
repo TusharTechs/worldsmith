@@ -328,7 +328,7 @@ export const ar: PartialDictionary = {
     signInToAttach: "سجّل الدخول لربط عملية الشراء هذه بحسابك.",
     signInToClaim: "سجّل الدخول للاسترجاع",
     openStudio: "افتح الاستوديو",
-    toolbox: "صندوق الأدوات",
+    subscription: "الاشتراك",
     home: "الرئيسية",
   },
 } as const;

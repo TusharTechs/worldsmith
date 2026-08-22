@@ -61,6 +61,14 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: admin.ok,
+    // Which Node the platform actually chose, and whether it can require() an ES module.
+    // firebase-admin reaches jose through a CommonJS require, so this single flag decides
+    // whether Auth and Firestore can load at all.
+    runtime: {
+      node: process.version,
+      canRequireESM: (process as unknown as { features: Record<string, unknown> }).features.require_module ?? false,
+      commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
+    },
     admin,
     deep: deepResult,
     vertexProject: resolveVertexConfig().projectId ? "set" : "MISSING",

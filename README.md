@@ -172,7 +172,7 @@ zero API spend. That is how this was developed, and how you can run it now.
 **Prerequisites:** Node 20+, a Google Cloud project with Vertex AI enabled, a Firebase project, and a Parallel API key.
 
 ```bash
-git clone <repo-url> && cd worldsmith
+git clone https://github.com/TusharTechs/worldsmith.git && cd worldsmith
 npm install
 cp .env.example .env.local   # then fill in the values below
 npm run dev                  # http://localhost:3000
@@ -203,7 +203,12 @@ NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
+
+# Absolute origin. Asset URIs are resolved against this server-side, so
+# leaving it unset makes generated images and video fail to load.
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Owner-only admin (promo codes)
 OWNER_EMAIL=you@example.com

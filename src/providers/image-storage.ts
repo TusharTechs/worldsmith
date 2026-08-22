@@ -1,10 +1,40 @@
-import { getApps } from "firebase-admin/app";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
 import { isAdminConfigured } from "@/store/admin-firestore-store";
+import { resolveServiceAccount } from "./vertex-provider";
 
 let storageBroken = false;
+
+const ADMIN_APP = "worldsmith-admin";
+
+/**
+ * The admin app this module uses for Storage, created here if nothing else has created it yet.
+ *
+ * This used to be a bare `getApps().find(...)`, which quietly assumed some other module had already
+ * initialised the app. The asset route imports only `readStoredAsset`, so nothing had — the lookup
+ * returned undefined, the Storage branch was skipped, and every asset 404'd even with the object
+ * sitting in the bucket. Locally it went unnoticed because the local-disk branch answered first.
+ */
+function storageAdminApp() {
+  const existing = getApps().find((a) => a.name === ADMIN_APP);
+  if (existing) return existing;
+  if (!isAdminConfigured()) return null;
+  try {
+    return initializeApp(
+      {
+        credential: cert(resolveServiceAccount() as Parameters<typeof cert>[0]),
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      },
+      ADMIN_APP
+    );
+  } catch {
+    // Lost a race with a concurrent initialisation — the winner's app is the one to use.
+    return getApps().find((a) => a.name === ADMIN_APP) ?? null;
+  }
+}
 
 function bucketFor(adminApp: ReturnType<typeof getApps>[number]) {
   const name = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
@@ -70,7 +100,7 @@ export async function storeImage(bytes: Buffer, mimeType: string): Promise<strin
   const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   if (isAdminConfigured() && !storageBroken) {
     try {
-      const adminApp = getApps().find((a) => a.name === "worldsmith-admin");
+      const adminApp = storageAdminApp();
       if (adminApp) {
         const file = bucketFor(adminApp).file(`worldsmith/${id}.png`);
         await file.save(bytes, { contentType: mimeType });
@@ -91,7 +121,7 @@ export async function storeVideo(bytes: Buffer): Promise<string> {
   const id = `vid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   if (isAdminConfigured() && !storageBroken) {
     try {
-      const adminApp = getApps().find((a) => a.name === "worldsmith-admin");
+      const adminApp = storageAdminApp();
       if (adminApp) {
         const file = bucketFor(adminApp).file(`worldsmith/videos/${id}.mp4`);
         await file.save(bytes, { contentType: "video/mp4" });
@@ -123,7 +153,7 @@ export async function deleteStoredAsset(uri: string | undefined): Promise<void> 
       return;
     }
     if (isAdminConfigured() && /storage\.googleapis\.com|firebasestorage/.test(uri)) {
-      const adminApp = getApps().find((a) => a.name === "worldsmith-admin");
+      const adminApp = storageAdminApp();
       if (adminApp) {
         const url = new URL(uri);
         const objectPath = decodeURIComponent(url.pathname.replace(/^\/[^/]+\//, ""));
@@ -139,7 +169,7 @@ export async function storeAudio(bytes: Buffer, mimeType: string, ext: string): 
   const id = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   if (isAdminConfigured() && !storageBroken) {
     try {
-      const adminApp = getApps().find((a) => a.name === "worldsmith-admin");
+      const adminApp = storageAdminApp();
       if (adminApp) {
         const file = bucketFor(adminApp).file(`worldsmith/audio/${id}.${ext}`);
         await file.save(bytes, { contentType: mimeType });
@@ -194,7 +224,7 @@ export async function readStoredAsset(
   }
 
   if (isAdminConfigured() && !storageBroken) {
-    const adminApp = getApps().find((a) => a.name === "worldsmith-admin");
+    const adminApp = storageAdminApp();
     if (adminApp) {
       const prefix = kind === "images" ? "worldsmith" : `worldsmith/${kind}`;
       for (const ext of exts) {

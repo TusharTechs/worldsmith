@@ -20,6 +20,8 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const [layers, setLayers] = useState<TextLayer[]>(initialLayers ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,9 +35,15 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
-    canvas.width = PREVIEW_W;
-    canvas.height = previewH;
+    // Assigning width/height reallocates the backing store and resets every context property, so
+    // doing it unconditionally paid that cost on each pointermove — the drag stuttered and stalled
+    // rather than tracking. Only resize when the size actually changed.
+    if (canvas.width !== PREVIEW_W || canvas.height !== previewH) {
+      canvas.width = PREVIEW_W;
+      canvas.height = previewH;
+    }
     const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, PREVIEW_W, previewH);
     ctx.drawImage(img, 0, 0, PREVIEW_W, previewH);
     renderLayers(ctx, layers, PREVIEW_W, previewH);
 
@@ -47,10 +55,38 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
       ctx.save();
       ctx.translate(sel.x * PREVIEW_W, sel.y * previewH);
       ctx.rotate((sel.rotationDeg * Math.PI) / 180);
+      // A design-tool bounding box: a thin solid rule with a little breathing room and corner
+      // marks, rather than a dashed rectangle tight against the glyphs. Dashes at this weight
+      // shimmered against the artwork and competed with the type they were meant to indicate.
+      const pad = 6;
+      const bw = m.width + pad * 2;
+      const bh = m.height + pad * 2;
+      const x0 = -bw / 2;
+      const y0 = -bh / 2;
+
+      ctx.strokeStyle = "rgba(34,211,238,0.85)";
+      ctx.lineWidth = 1;
+      if (typeof (ctx as CanvasRenderingContext2D & { roundRect?: unknown }).roundRect === "function") {
+        ctx.beginPath();
+        ctx.roundRect(x0, y0, bw, bh, 4);
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(x0, y0, bw, bh);
+      }
+
+      // Corner marks read as a handle affordance without implying resize, which is not supported.
+      const c = 7;
+      ctx.lineWidth = 2;
       ctx.strokeStyle = "#22d3ee";
-      ctx.setLineDash([6, 4]);
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-m.width / 2, -m.height / 2, m.width, m.height);
+      for (const [cx0, cy0, sx, sy] of [
+        [x0, y0, 1, 1], [x0 + bw, y0, -1, 1], [x0, y0 + bh, 1, -1], [x0 + bw, y0 + bh, -1, -1],
+      ] as const) {
+        ctx.beginPath();
+        ctx.moveTo(cx0 + sx * c, cy0);
+        ctx.lineTo(cx0, cy0);
+        ctx.lineTo(cx0, cy0 + sy * c);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -207,6 +243,7 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
       setCaretPos(hit.text.length); // caret starts at end, like clicking a filled input
       dragRef.current = { id: hit.id, dx: p.x - hit.x, dy: p.y - hit.y };
       e.currentTarget.setPointerCapture(e.pointerId);
+      setDragging(true);
       (document.activeElement as HTMLElement | null)?.blur?.();
     } else {
       setSelectedId(null);
@@ -214,7 +251,12 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
+    if (!dragRef.current) {
+      // Cursor should say whether there is anything to grab under the pointer.
+      const q = toNorm(e);
+      setHovering(hitTest(q.x, q.y) != null);
+      return;
+    }
     const p = toNorm(e);
     const { id, dx, dy } = dragRef.current;
     setLayers((ls) => ls.map((l) => {
@@ -236,6 +278,7 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   // outside the window, a touch interruption, a browser gesture — with no button held down.
   const endDrag = (e?: React.PointerEvent) => {
     dragRef.current = null;
+    setDragging(false);
     if (e) {
       const el = e.currentTarget as Element;
       if (el.hasPointerCapture?.(e.pointerId)) el.releasePointerCapture(e.pointerId);
@@ -268,24 +311,30 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 sm:p-6">
-      <div className="flex w-full max-w-6xl flex-col gap-4 lg:flex-row lg:gap-6">
-        <div className="min-w-0 flex-1">
+    <div className="fixed inset-0 z-50 flex select-none items-center justify-center overflow-y-auto bg-black/85 p-4 sm:p-6">
+      {/* Fixed dialog height.
+          The panel's content changes height as layers are selected and deselected, and the dialog
+          is vertically centred — so selecting or deselecting resized the dialog and shifted the
+          canvas under the pointer mid-interaction. The canvas appeared to jump vertically while
+          the text had not moved at all. Pinning the height keeps the canvas still whatever the
+          panel is showing; the panel scrolls inside its own column instead. */}
+      <div className="flex w-full max-w-6xl flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center">
           <canvas
             ref={canvasRef}
-            className="w-full rounded border border-zinc-700 bg-zinc-950 touch-none cursor-move"
+            className={`block w-full select-none rounded-xl border border-white/[0.09] bg-zinc-950 touch-none ${dragging ? "cursor-grabbing" : hovering ? "cursor-grab" : "cursor-default"}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            onLostPointerCapture={() => { dragRef.current = null; }}
+            onLostPointerCapture={() => { dragRef.current = null; setDragging(false); }}
           />
           <p className="text-[10px] font-mono text-zinc-500 mt-2">
             Click text, type directly · ← → move caret · Home/End · Enter = new line · Backspace deletes · drag to move · exports at {exportWidth}×{exportHeight}
           </p>
         </div>
 
-        <div className="w-full shrink-0 space-y-3 overflow-y-auto rounded-xl border border-white/[0.09] bg-zinc-900 p-4 lg:max-h-[85vh] lg:w-80">
+        <div className="w-full shrink-0 space-y-3 overflow-y-auto rounded-xl border border-white/[0.09] bg-zinc-900 p-4 lg:h-[86vh] lg:w-80">
           <div className="flex items-center justify-between">
             <h3 className="text-xs uppercase tracking-widest text-cyan-400">TextKit</h3>
             <button
@@ -318,8 +367,10 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
                 </div>
               </div>
 
-              <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500">Text (Enter = new line)</span>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-widest text-zinc-500">Text</span>
+                {/* The field previews what it edits — same face, same case — so the panel reads as
+                    part of the canvas rather than a generic form beside it. */}
                 <textarea
                   value={selected.text}
                   rows={2}
@@ -328,9 +379,16 @@ export default function CreativeTextEditor({ imageUri, exportWidth, exportHeight
                     setCaretPos(e.target.selectionStart ?? e.target.value.length);
                     setCaretOn(true);
                   }}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-200 resize-none"
+                  style={{
+                    fontFamily: TEXTKIT_FONTS[selected.font]?.family,
+                    textTransform: selected.uppercase ? "uppercase" : "none",
+                  }}
+                  className="mt-1.5 w-full resize-none rounded-lg border border-white/[0.09] bg-zinc-950 p-3 text-sm leading-snug text-zinc-100 transition-colors placeholder:text-zinc-600 hover:border-white/20 focus:border-cyan-500/60 focus:outline-none focus:ring-1 focus:ring-cyan-500/25"
                 />
+                <span className="mt-1 block text-[10px] text-zinc-600">Enter adds a new line</span>
               </label>
+
+              <div className="!mt-5 border-t border-white/[0.07] pt-4" />
 
               <label className="block space-y-1">
                 <span className="text-[10px] uppercase tracking-widest text-zinc-500">Font</span>

@@ -115,11 +115,15 @@ export async function POST(req: NextRequest) {
     // Cancellations/refunds/chargebacks: stop treating the subscription as active. We don't claw
     // back already-spent credits automatically, but we do stop silently ignoring these events.
     if (isCancelish) {
-      if (uid) {
+      // Test mode has to be symmetric. Activations are withheld, so applying cancellations would
+      // mean a test-mode plan change can only ever downgrade you: buying a higher tier cancels the
+      // old subscription upstream, that cancellation lands here, and nothing activates in its
+      // place. Test billing changes nothing in either direction.
+      if (uid && !isTestBilling()) {
         await ensureUser(uid, email);
         await db.collection("users").doc(uid).set({ subActive: false, subCancelledAt: Date.now() }, { merge: true });
       }
-      return NextResponse.json({ ok: true, handled: "cancellation" });
+      return NextResponse.json({ ok: true, handled: "cancellation", testMode: isTestBilling() });
     }
 
     if (!rule) return NextResponse.json({ ok: true, ignored: true });

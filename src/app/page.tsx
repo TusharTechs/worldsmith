@@ -135,10 +135,24 @@ export default function Landing() {
 
   const loadAcct = async () => {
     if (!auth.user) { setAcct(null); return; }
-    try { const t = await auth.user.getIdToken(); await serverClaimPurchase(t).catch(() => {}); }
-    catch (e) { console.error("[landing] claim failed:", e); }
-    try { const t = await auth.user.getIdToken(); setAcct(await serverGetCredits(t)); }
-    catch (e) { console.error("[landing] getCredits failed:", e); }
+
+    // Show what the account already says before reconciling anything. serverClaimPurchase sweeps
+    // Dodo's API — a payment lookup, a subscription lookup and a 50-item payment list — and the
+    // plan and credit balance were sitting behind all of it, so a subscriber watched a skeleton
+    // for as long as those round trips took and the pricing table offered them a plan they were
+    // already on. Reconciliation is for purchases made outside the site; it is not on the path to
+    // rendering state we already hold.
+    try {
+      const t = await auth.user.getIdToken();
+      setAcct(await serverGetCredits(t));
+    } catch (e) { console.error("[landing] getCredits failed:", e); }
+
+    try {
+      const t = await auth.user.getIdToken();
+      const claimed = await serverClaimPurchase(t);
+      // Only re-fetch when the sweep actually changed something.
+      if (claimed?.granted) setAcct(await serverGetCredits(await auth.user.getIdToken()));
+    } catch (e) { console.error("[landing] claim failed:", e); }
   };
 
   useEffect(() => { loadAcct(); }, [auth.user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps

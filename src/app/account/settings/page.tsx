@@ -150,6 +150,10 @@ export default function AccountSettingsPage() {
     setPlan(acct.plan);
   };
 
+  // `plan` is undefined until the account loads. Defaulting it to "free" for display makes the
+  // page assert "Free plan" to a subscriber for as long as the fetch takes — the same mistake
+  // the credits figure used to make by showing zero. Unknown has to render as unknown.
+  const planLoaded = plan !== undefined;
   const planKey = (plan ?? "free").toLowerCase();
   const planLabel = `${PLAN_NAME[planKey] ?? t("account.free")} ${t("account.planSuffix")}`;
   const cap = PLAN_CAP[planKey] ?? FREE_TRIAL_CREDITS;
@@ -278,10 +282,12 @@ export default function AccountSettingsPage() {
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
-                      <span className="text-sm text-white">{planLabel}</span>
+                      {planLoaded
+                        ? <span className="text-sm text-white">{planLabel}</span>
+                        : <span className="inline-block h-4 w-28 rounded bg-zinc-800 animate-pulse align-middle" aria-label="Loading plan" />}
                       {/* A paid plan should say when it renews. The free plan has no term, and a
                           cancelled one keeps access to the end of the period it was paid for. */}
-                      {planKey !== "free" && sub?.renewsAt && (
+                      {planLoaded && planKey !== "free" && sub?.renewsAt && (
                         <p className="mt-0.5 text-[11px] text-zinc-500">
                           {t(sub.active ? "account.renewsOn" : "account.endsOn", {
                             date: new Date(sub.renewsAt).toLocaleDateString(undefined, {
@@ -298,7 +304,7 @@ export default function AccountSettingsPage() {
                     <div className="h-full ws-gradient-bg rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <a href="/#pricing" className="inline-block px-5 py-2.5 ws-gradient-bg text-black text-xs font-semibold uppercase tracking-widest rounded hover:brightness-110 transition-all">
-                    {planKey === "free" ? t("account.goPremium") : "Change plan"}
+                    {!planLoaded ? "Manage plan" : planKey === "free" ? t("account.goPremium") : "Change plan"}
                   </a>
                 </div>
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

@@ -132,7 +132,18 @@ export async function applyPurchaseRule(uid: string, rule: any, providerRenewsAt
   return "nothing";
 }
 
-export async function serverStartCheckout(idToken: string, item: CheckoutItem): Promise<{ url: string }> {
+/**
+ * Start a checkout.
+ *
+ * Returns the failure rather than throwing it. A Server Action that throws in production has its
+ * message redacted by the framework and reaches the browser as "Minified React error #441", which
+ * tells the buyer nothing and the operator nothing — the actual cause ("this pack is not
+ * configured") is lost. A returned error survives the boundary intact.
+ */
+export async function serverStartCheckout(
+  idToken: string,
+  item: CheckoutItem
+): Promise<{ url: string; error?: never } | { url?: never; error: string }> {
   const u = await verifyUser(idToken);
   await ensureUser(u.uid, u.email ?? "");
   const key = `${item.kind}:${item.id}${item.cycle ? ":" + item.cycle : ""}`;
@@ -171,7 +182,12 @@ export async function serverStartCheckout(idToken: string, item: CheckoutItem): 
 
   const links: Record<string, string> = JSON.parse(process.env.DODO_PAYMENT_LINKS ?? "{}");
   const url = links[key];
-  if (!url) throw new Error(`Checkout "${key}" not configured.`);
+  if (!url) {
+    // Name the key. Pack ids are part of it (`pack:<id>`), so a pricing change that isn't
+    // mirrored into DODO_PRODUCT_IDS / DODO_PAYMENT_LINKS lands exactly here.
+    console.error(`[BILLING] no checkout configured for "${key}". Configured: ${Object.keys(links).join(", ") || "none"}`);
+    return { error: `This option isn't available for purchase right now (${key}). Please try another, or contact support.` };
+  }
   return { url };
 }
 

@@ -147,8 +147,9 @@ export default function Landing() {
     if (!auth.user) { auth.openAuth(); return; }
     try {
       const t = await auth.user.getIdToken();
-      const { url } = await serverStartCheckout(t, item);
-      window.location.href = url;
+      const r = await serverStartCheckout(t, item);
+      if (!r.url) { alert(r.error ?? "Checkout failed to start."); return; }
+      window.location.href = r.url;
     } catch (e: any) {
       alert(e?.message ?? "Checkout failed to start.");
     }

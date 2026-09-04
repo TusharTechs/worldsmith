@@ -9,7 +9,7 @@
 
 *Google Cloud Agentic Cinema Hackathon — **Parallel** track*
 
-[Live demo](https://worldsmith.vercel.app) · [Demo video](#demo-video) · [Architecture](#architecture)
+[Live demo](https://worldsmith.vercel.app) · [Demo video](https://youtu.be/T9oYveaXwC4) · [Architecture](#architecture)
 
 </div>
 
@@ -137,8 +137,10 @@ on Vertex AI, and nothing else.
 
 ## Demo video
 
-<!-- TODO: replace with the YouTube/Vimeo link before submitting. The header links here. -->
-*Link to be added — a 3-minute walkthrough of one idea going in and a finished campaign coming out.*
+**[Watch the 3-minute demo →](https://youtu.be/T9oYveaXwC4)**
+
+One sentence in, a finished production out — live Parallel research, the World Bible, Veo footage
+with continuity QC, the cut, and the campaign.
 
 ## Architecture
 

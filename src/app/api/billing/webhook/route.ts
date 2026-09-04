@@ -5,6 +5,7 @@ import { getAuth } from "firebase-admin/auth";
 import { resolveVertexConfig, resolveFirebaseServiceAccount } from "@/providers/vertex-provider";
 import { applyPurchaseRule } from "@/app/actions/billing";
 import { ensureUser, adminDb } from "@/store/credits-store";
+import { isTestBilling } from "@/core/billing-mode";
 
 const APP_NAME = "worldsmith-credits-v2";
 
@@ -131,7 +132,9 @@ export async function POST(req: NextRequest) {
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (snap.exists) { won = false; return; }
-      tx.set(ref, { productId, email, rule, status: uid ? "claimed" : "unclaimed", uid: uid ?? null, at: Date.now() });
+      // testMode is recorded on the payment itself so a test purchase stays identifiable in the
+      // ledger afterwards, rather than looking like a live sale that mysteriously granted nothing.
+      tx.set(ref, { productId, email, rule, status: uid ? "claimed" : "unclaimed", uid: uid ?? null, at: Date.now(), testMode: isTestBilling() });
       won = true;
     });
 
@@ -146,7 +149,7 @@ export async function POST(req: NextRequest) {
        .find((n) => Number.isFinite(n) && n > Date.now());
       await applyPurchaseRule(uid, rule, providerRenews);
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, testMode: isTestBilling() });
   } catch (e) {
     console.error("[BILLING] webhook processing error:", e);
     return NextResponse.json({ ok: false }, { status: 400 });

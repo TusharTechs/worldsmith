@@ -5,6 +5,7 @@ import {
   redeemPromoCode, upsertPromoCode, listPromoCodes, type RedeemResult, type PromoCode,
 } from "@/store/credits-store";
 import { PACKS, PLANS } from "@/core/credits";
+import { isTestBilling } from "@/core/billing-mode";
 import { storeImage } from "@/providers/image-storage";
 
 export type CheckoutItem = { kind: "plan" | "pack"; id: string; cycle?: "monthly" | "annual" };
@@ -15,8 +16,10 @@ export type CheckoutItem = { kind: "plan" | "pack"; id: string; cycle?: "monthly
  */
 export type ClaimResult = {
   granted: string | null;
-  reason: "granted" | "unverified-email" | "no-match";
+  reason: "granted" | "test-mode" | "unverified-email" | "no-match";
   email: string;
+  /** True when billing is in test mode: the purchase was matched but no credits were moved. */
+  testMode?: boolean;
   detail?: string;
 };
 
@@ -109,14 +112,21 @@ export async function serverUploadProfilePhoto(idToken: string, dataUrl: string)
 
 export async function applyPurchaseRule(uid: string, rule: any, providerRenewsAt?: number): Promise<string> {
   if (!rule) return "nothing";
+  // Every path that could add credits comes through here — the webhook and the manual claim
+  // both call it — so this is the one place the test-mode gate has to hold. The purchase is
+  // still recognised and described; only the grant is withheld.
+  const test = isTestBilling();
   if (rule.type === "pack") {
     const pack = PACKS.find((p) => p.id === rule.pack);
-    if (pack) { await grantCredits(uid, pack.credits); return `${pack.credits} credits`; }
+    if (pack) {
+      if (!test) await grantCredits(uid, pack.credits);
+      return `${pack.credits} credits`;
+    }
   } else if (rule.type === "plan") {
     const plan = (PLANS as any)[rule.plan];
     if (plan) {
-      await activatePlan(uid, rule.plan, plan.credits, rule.cycle, providerRenewsAt);
-      return `${plan.name} plan active (+${plan.credits} credits)`;
+      if (!test) await activatePlan(uid, rule.plan, plan.credits, rule.cycle, providerRenewsAt);
+      return test ? `${plan.name} plan (+${plan.credits} credits)` : `${plan.name} plan active (+${plan.credits} credits)`;
     }
   }
   return "nothing";
@@ -287,7 +297,7 @@ export async function serverClaimPurchase(
       });
       if (!won) continue; // lost the race to a concurrent claim — try the next match, if any
       const granted = await applyPurchaseRule(u.uid, p.rule);
-      return { granted, reason: "granted" as const, email };
+      return { granted, reason: isTestBilling() ? "test-mode" as const : "granted" as const, email, testMode: isTestBilling() };
     }
   }
 
@@ -302,7 +312,7 @@ export async function serverClaimPurchase(
         d.product_id ?? d.product_cart?.[0]?.product_id ?? null,
         d.status ?? "", d.customer?.email ?? d.customer_email ?? "", "direct-payment"
       );
-      if (g) return { granted: g, reason: "granted", email, detail: opts.paymentId };
+      if (g) return { granted: g, reason: isTestBilling() ? "test-mode" : "granted", email, testMode: isTestBilling(), detail: opts.paymentId };
     }
   }
   if (opts?.subscriptionId) {
@@ -316,7 +326,7 @@ export async function serverClaimPurchase(
         `${opts.subscriptionId}:${d.current_period_start ?? d.created_at ?? "init"}`,
         productId, d.status ?? "ACTIVE", d.customer?.email ?? "", "direct-subscription"
       );
-      if (g) return { granted: g, reason: "granted", email, detail: opts.subscriptionId };
+      if (g) return { granted: g, reason: isTestBilling() ? "test-mode" : "granted", email, testMode: isTestBilling(), detail: opts.subscriptionId };
     }
   }
 
@@ -331,7 +341,7 @@ export async function serverClaimPurchase(
         p.product_id ?? p.product_cart?.[0]?.product_id ?? null,
         p.status ?? "", p.customer?.email ?? p.customer_email ?? "", "list"
       );
-      if (g) return { granted: g, reason: "granted", email, detail: String(p.payment_id ?? p.id) };
+      if (g) return { granted: g, reason: isTestBilling() ? "test-mode" : "granted", email, testMode: isTestBilling(), detail: String(p.payment_id ?? p.id) };
     }
     diag.push(`list:${Array.isArray(arr) ? arr.length : 0}-payments-no-match`);
   }

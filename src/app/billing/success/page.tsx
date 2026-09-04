@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, FlaskConical, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { serverClaimPurchase, serverGetCredits } from "@/app/actions/billing";
@@ -9,6 +9,10 @@ import { serverClaimPurchase, serverGetCredits } from "@/app/actions/billing";
 type Phase =
   | { kind: "working" }
   | { kind: "done"; granted: string; balance: number | null }
+  // A test-mode purchase is a real, completed payment that deliberately grants nothing. Showing
+  // it as success would be a lie about the balance; showing it as a failure would be a lie about
+  // the payment. It gets its own state.
+  | { kind: "test"; granted: string }
   | { kind: "attention"; detail?: string };
 
 /**
@@ -49,6 +53,7 @@ export default function BillingSuccess() {
         try {
           balance = (await serverGetCredits(await auth.user!.getIdToken())).credits;
         } catch { /* the grant succeeded; a failed balance read shouldn't look like a failed payment */ }
+        if (r.testMode) { setPhase({ kind: "test", granted: r.granted }); return; }
         setPhase({ kind: "done", granted: r.granted, balance });
       } catch (e) {
         setPhase({ kind: "attention", detail: (e as Error)?.message });
@@ -67,6 +72,7 @@ export default function BillingSuccess() {
           <div
             className={`h-0.5 w-full ${
               phase.kind === "done" ? "ws-gradient-bg"
+              : phase.kind === "test" ? "bg-cyan-500/70"
               : phase.kind === "attention" ? "bg-amber-500/70"
               : "bg-zinc-700 animate-pulse"
             }`}
@@ -77,14 +83,18 @@ export default function BillingSuccess() {
               <StatusMedallion phase={phase} signedIn={auth.user != null} />
               <div className="space-y-1.5">
                 <h1 className="text-xl font-semibold text-white">
-                  {phase.kind === "attention" ? t("billingSuccess.attentionTitle") : t("billingSuccess.title")}
+                  {phase.kind === "attention" ? t("billingSuccess.attentionTitle")
+                    : phase.kind === "test" ? "Test payment received"
+                    : t("billingSuccess.title")}
                 </h1>
                 <p className="text-sm text-zinc-400 max-w-sm">
                   {auth.loading ? t("billingSuccess.applyingNote")
                     : !auth.user ? t("billingSuccess.signInToAttach")
                     : phase.kind === "working" ? t("billingSuccess.applyingNote")
                     : phase.kind === "attention" ? t("billingSuccess.attentionBody")
-                    : null}
+                    : phase.kind === "test"
+                      ? "Billing is running against Dodo's test environment. The checkout, the webhook and the payment record all completed — but no credits were added, and no money changed hands."
+                      : null}
                 </p>
               </div>
             </div>
@@ -109,6 +119,19 @@ export default function BillingSuccess() {
                     </dd>
                   </div>
                 )}
+              </dl>
+            )}
+
+            {phase.kind === "test" && (
+              <dl className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.04] divide-y divide-white/[0.06]">
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <dt className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Matched</dt>
+                  <dd className="text-sm text-zinc-200 text-right">{phase.granted}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <dt className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Credits added</dt>
+                  <dd className="text-sm font-semibold text-cyan-300 tabular-nums">None — test mode</dd>
+                </div>
               </dl>
             )}
 
@@ -176,13 +199,20 @@ export default function BillingSuccess() {
   );
 }
 
-/** Circular status mark — replaces an emoji, and reads as three distinct outcomes at a glance. */
+/** Circular status mark — replaces an emoji, and reads as four distinct outcomes at a glance. */
 function StatusMedallion({ phase, signedIn }: { phase: Phase; signedIn: boolean }) {
   const base = "flex h-14 w-14 items-center justify-center rounded-full border";
   if (!signedIn || phase.kind === "working") {
     return (
       <div className={`${base} border-zinc-700 bg-zinc-800/60 text-zinc-400`}>
         <Loader2 size={22} className="animate-spin" />
+      </div>
+    );
+  }
+  if (phase.kind === "test") {
+    return (
+      <div className={`${base} border-cyan-400/40 bg-cyan-400/10 text-cyan-300`}>
+        <FlaskConical size={22} />
       </div>
     );
   }

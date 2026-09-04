@@ -104,10 +104,20 @@ grep -rn "parallel.ai\|v1/search" src/providers/      # the Parallel Search call
 
 ### On Agent Builder
 
-The agent network runs on **Vertex AI** — the platform Agent Builder itself is built on — driven
-through the `@google/genai` SDK, with orchestration, schema-validated handoffs, the QC gate and
-the cost ledger implemented directly in [`src/core/orchestrator.ts`](src/core/orchestrator.ts)
-rather than delegated to the ADK runtime.
+The agent network runs on **Vertex AI — which Google now calls Agent Platform** — driven through
+the `@google/genai` SDK, with orchestration, schema-validated handoffs, the QC gate and the cost
+ledger implemented directly in [`src/core/orchestrator.ts`](src/core/orchestrator.ts) rather than
+delegated to the ADK runtime.
+
+That is not a framing; it is what the platform calls itself. Every model call in this system
+authenticates to `aiplatform.googleapis.com` under the role Google titles **Agent Platform User** —
+verifiable without an account or a key:
+
+```bash
+gcloud iam roles describe roles/aiplatform.user | grep -E "^title|^name"
+# name: roles/aiplatform.user
+# title: Agent Platform User
+```
 
 That was a deliberate call, and it is worth being straight about. Three of this pipeline's
 properties are things a generic agent runtime does not give you: shot durations are reconciled

@@ -3,7 +3,7 @@ import { getStorage } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
 import { isAdminConfigured } from "@/store/admin-firestore-store";
-import { resolveServiceAccount } from "./vertex-provider";
+import { resolveFirebaseServiceAccount } from "./vertex-provider";
 
 let storageBroken = false;
 
@@ -24,7 +24,7 @@ function storageAdminApp() {
   try {
     return initializeApp(
       {
-        credential: cert(resolveServiceAccount() as Parameters<typeof cert>[0]),
+        credential: cert(resolveFirebaseServiceAccount() as Parameters<typeof cert>[0]),
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       },

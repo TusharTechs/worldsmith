@@ -60,15 +60,30 @@ function parseInlineCredentials(): Record<string, unknown> | undefined {
 }
 
 /**
- * The service account itself, from wherever it is available.
+ * Firebase admin credentials, from wherever they are available.
  *
- * Inline JSON first, then the file on disk. Anything needing admin credentials — Firestore, Auth,
- * the billing webhook — must go through this rather than reading the path directly, or it works
- * locally and throws on a host that has no filesystem to read.
+ * FIREBASE_SERVICE_ACCOUNT_JSON first, and that order is load-bearing. Vertex and Firebase can
+ * live in different Google Cloud projects — models billed to one account, auth and data in
+ * another — and this resolver serves the Firebase side: Auth, Firestore, Storage, the billing
+ * webhook. Preferring the Vertex account here would hand those a service account from the wrong
+ * project, and since the project id still comes from NEXT_PUBLIC_FIREBASE_PROJECT_ID, every
+ * sign-in, credit read and asset write would fail against a project that account has no
+ * permissions in.
+ *
+ * The Vertex fallback only exists for the common case where both are the same account.
+ *
+ * Anything needing admin credentials must go through this rather than reading the path directly,
+ * or it works locally and throws on a host that has no filesystem to read.
  */
-export function resolveServiceAccount(): Record<string, unknown> {
-  const inline = parseInlineCredentials();
-  if (inline) return inline;
+export function resolveFirebaseServiceAccount(): Record<string, unknown> {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? process.env.VERTEX_SERVICE_ACCOUNT_JSON;
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      console.error("[FIREBASE] service-account JSON in the environment is not valid JSON — ignoring it.");
+    }
+  }
   const cfg = resolveVertexConfig();
   try {
     return JSON.parse(fs.readFileSync(cfg.serviceAccountPath, "utf8"));
@@ -77,8 +92,8 @@ export function resolveServiceAccount(): Record<string, unknown> {
     // browser as a blank 500 and a minified React error — every route that touches Auth or
     // Firestore fails at once with nothing naming the cause. Say what is actually wrong.
     throw new Error(
-      "No Firebase/Vertex service account available. Set VERTEX_SERVICE_ACCOUNT_JSON (or " +
-      "FIREBASE_SERVICE_ACCOUNT_JSON) to the service-account JSON on hosts with no filesystem, " +
+      "No Firebase service account available. Set FIREBASE_SERVICE_ACCOUNT_JSON (or " +
+      "VERTEX_SERVICE_ACCOUNT_JSON) to the service-account JSON on hosts with no filesystem, " +
       `or provide the file at ${cfg.serviceAccountPath} locally. Underlying error: ${(e as Error).message}`
     );
   }

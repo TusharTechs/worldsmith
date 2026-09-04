@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { resolveVertexConfig, resolveServiceAccount } from "@/providers/vertex-provider";
+import { resolveVertexConfig, resolveFirebaseServiceAccount } from "@/providers/vertex-provider";
 import { applyPurchaseRule } from "@/app/actions/billing";
 import { ensureUser, adminDb } from "@/store/credits-store";
 
@@ -13,7 +13,7 @@ function adminApp() {
   const existing = getApps().find((a) => a.name === APP_NAME);
   if (existing) return existing;
   const cfg = resolveVertexConfig();
-  const sa = resolveServiceAccount();
+  const sa = resolveFirebaseServiceAccount();
   return initializeApp(
     {
       credential: cert(sa),

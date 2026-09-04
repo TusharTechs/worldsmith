@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveServiceAccount, resolveVertexConfig } from "@/providers/vertex-provider";
+import { resolveFirebaseServiceAccount, resolveVertexConfig } from "@/providers/vertex-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +41,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const vertexSaDomain = (() => {
+    const email = String(resolveVertexConfig().credentials?.client_email ?? "");
+    return email.includes("@") ? email.split("@")[1] : "none (falls back to the Firebase account)";
+  })();
+
   const present = (name: string) => {
     const v = process.env[name];
     return v ? { set: true, length: v.length } : { set: false };
@@ -48,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   let admin: { ok: boolean; error?: string; clientEmailDomain?: string };
   try {
-    const sa = resolveServiceAccount();
+    const sa = resolveFirebaseServiceAccount();
     const email = String(sa.client_email ?? "");
     admin = {
       ok: Boolean(sa.private_key && sa.client_email),
@@ -76,6 +81,10 @@ export async function GET(req: NextRequest) {
     // effect — and a service account authenticating against the wrong project fails in a way that
     // reads like a bad key. A project id is an identifier, not a credential.
     vertexProject: resolveVertexConfig().projectId || "MISSING",
+    // The account the MODELS authenticate with, reported separately from the Firebase one above.
+    // When the two live in different projects these must differ, and each must match its own
+    // project — a mismatch is the failure that reads like a bad key.
+    vertexServiceAccountDomain: vertexSaDomain,
     env: {
       VERTEX_SERVICE_ACCOUNT_JSON: present("VERTEX_SERVICE_ACCOUNT_JSON"),
       FIREBASE_SERVICE_ACCOUNT_JSON: present("FIREBASE_SERVICE_ACCOUNT_JSON"),

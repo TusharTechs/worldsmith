@@ -66,6 +66,8 @@ export function AccountMenu({ credits, plan, renewsAt }: { credits?: number | nu
   if (!auth.user) return null;
 
   const label = auth.user.displayName ?? auth.user.email?.split("@")[0] ?? "Account";
+  // Same rule as the account page: until the plan is known, say nothing rather than "Free plan".
+  const planLoaded = plan !== undefined;
   const planKey = (plan ?? "free").toLowerCase();
   const planLabel = `${PLAN_NAME[planKey] ?? t("account.free")} ${t("account.planSuffix")}`;
   const cap = PLAN_CAP[planKey] ?? FREE_TRIAL_CREDITS;
@@ -90,9 +92,9 @@ export function AccountMenu({ credits, plan, renewsAt }: { credits?: number | nu
             <Avatar photoURL={auth.user.photoURL} label={label} size={40} />
             <div className="min-w-0">
               <p className="text-sm text-white truncate">{label}</p>
-              <p className="text-xs text-zinc-500 truncate">{username ? `@${username} · ` : ""}{planLabel}</p>
+              <p className="text-xs text-zinc-500 truncate">{username ? `@${username} · ` : ""}{planLoaded ? planLabel : <span className="inline-block h-2.5 w-20 rounded bg-zinc-800 animate-pulse align-middle" aria-label="Loading plan" />}</p>
               {/* A paid plan should say when it renews without a trip to settings. */}
-              {planKey !== "free" && renewsAt != null && (
+              {planLoaded && planKey !== "free" && renewsAt != null && (
                 <p className="mt-0.5 truncate text-[10px] text-zinc-600">
                   {t("account.renewsOn", { date: new Date(renewsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) })}
                 </p>
@@ -118,7 +120,7 @@ export function AccountMenu({ credits, plan, renewsAt }: { credits?: number | nu
             <a href="/#pricing" onClick={() => setOpen(false)} className="flex items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors">
               <span className="flex items-center gap-2.5 text-xs text-zinc-200 min-w-0">
                 <Crown size={14} className="text-amber-400 shrink-0" />
-                <span className="truncate">{planKey === "free" ? t("account.goPremium") : `Upgrade to ${upgradeTo}`}</span>
+                <span className="truncate">{!planLoaded ? "Plans" : planKey === "free" ? t("account.goPremium") : `Upgrade to ${upgradeTo}`}</span>
               </span>
               <span className="shrink-0 px-3 py-1 ws-gradient-bg text-black text-[10px] font-semibold uppercase tracking-widest rounded-full">{t("account.upgrade")}</span>
             </a>

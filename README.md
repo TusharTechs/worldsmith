@@ -23,8 +23,8 @@ standalone tools but not the flagship pipeline. So there is a code for it:
 
 | | |
 |---|---|
-| **Code** | `JUDGE-3000` |
-| **Grants** | 3,000 credits — about three full 15-second productions |
+| **Code** | `JUDGE2026` |
+| **Grants** | 1,200 credits — one full 15-second production, with room for a retry |
 | **Where** | Sign in, then **Account → Redeem a code** (or the *Redeem* field on the pricing panel) |
 
 Then open **[/studio](https://worldsmith.vercel.app/studio)**, type an idea, and press **Build my

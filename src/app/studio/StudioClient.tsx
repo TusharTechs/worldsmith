@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PipelineState, PipelineStage } from '@/core/orchestrator';
 import { createProjectStore } from '@/store/factory';
-import { startProduction } from '@/app/actions/production';
+import { startProduction, resumeProduction } from '@/app/actions/production';
 import { serverGetModes } from '@/app/actions/store';
 import {
   serverBuildGenerationPlan,
@@ -116,6 +116,11 @@ type UIState = PipelineState & {
 };
 
 const STUCK_THRESHOLD_MS = 5 * 60 * 1000;
+
+/** How long a planning status may sit unchanged before we assume the run was cut off. */
+const STALL_RESUME_MS = 25_000;
+/** A ceiling, so a genuinely broken run fails visibly instead of resuming forever. */
+const MAX_RESUMES = 8;
 
 function mapProjectToState(p: Project): UIState {
   return {
@@ -345,11 +350,40 @@ export default function StudioDashboard() {
       const idToken = await auth.user.getIdToken();
       // ownerUid is now set at creation time (server-verified) — no separate claim step needed.
       const { projectId } = await startProduction({ idToken, prompt, style, duration });
+
+      // A serverless function can be terminated mid-run when the planning chain outlasts its
+      // execution budget. Nothing throws, so the project simply stops advancing and this loop
+      // would otherwise wait forever on a status that will never change. Watch for a stalled
+      // status and ask the server to continue from the last completed stage; each resume gets a
+      // fresh budget, and finished stages are skipped rather than re-run.
+      let lastStatus = '';
+      let stalledFor = 0;
+      let resumes = 0;
+
       for (;;) {
         await new Promise((r) => setTimeout(r, 1500));
         const p = await store.getProject(projectId);
         if (!p) continue;
         setState(mapProjectToState(p));
+
+        if (p.status === lastStatus) {
+          stalledFor += 1500;
+        } else {
+          lastStatus = p.status;
+          stalledFor = 0;
+        }
+
+        const terminal = p.status === 'COMPLETED' || p.status === 'FAILED_WITH_PARTIAL_ARTIFACTS';
+        if (!terminal && stalledFor >= STALL_RESUME_MS && resumes < MAX_RESUMES) {
+          resumes += 1;
+          stalledFor = 0;
+          try {
+            await resumeProduction(idToken, projectId);
+          } catch (e) {
+            console.error('[UI] resume failed:', e);
+          }
+        }
+
         if (p.status === 'COMPLETED' || p.status === 'FAILED_WITH_PARTIAL_ARTIFACTS') {
           if (p.status === 'COMPLETED' && !p.generationPlan) {
             try {

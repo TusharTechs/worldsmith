@@ -4,6 +4,7 @@ import { createServerProjectStore } from "@/store/server-factory";
 import { ProductionPipeline } from "@/core/orchestrator";
 import { verifyUser, ensureUser, getUserCredits } from "@/store/credits-store";
 import { estimateProductionCredits } from "@/core/credits";
+import { requireProjectOwner } from "@/app/actions/project-auth";
 
 
 export async function startProduction(params: {
@@ -29,4 +30,22 @@ export async function startProduction(params: {
   const pipeline = new ProductionPipeline(store);
   const projectId = await pipeline.start(params.prompt, params.style, params.duration, params.budgetUSD, u.uid);
   return { projectId };
+}
+
+/** Statuses that mean the pipeline has nothing left to do. */
+const TERMINAL = new Set(["COMPLETED", "FAILED_WITH_PARTIAL_ARTIFACTS"]);
+
+/**
+ * Nudge a stalled planning run forward.
+ *
+ * Called by the Studio when a project's status stops advancing while still mid-pipeline — the
+ * signature of a run cut off by the platform's execution limit rather than by an error. Costs
+ * nothing when there is nothing to resume: completed stages are skipped, so this cannot
+ * re-run or re-charge work that already succeeded.
+ */
+export async function resumeProduction(idToken: string, projectId: string): Promise<void> {
+  const { store, project } = await requireProjectOwner(idToken, projectId);
+  if (TERMINAL.has(project.status)) return;
+  const pipeline = new ProductionPipeline(store);
+  await pipeline.resumeDetached(project);
 }

@@ -103,6 +103,22 @@ export class ProductionPipeline {
     return project.id;
   }
 
+  /**
+   * Continue a production that stopped without finishing.
+   *
+   * Serverless functions have an execution ceiling, and the planning chain is six model calls
+   * long — a slow one can take the run past it. The function is then terminated rather than
+   * throwing, so the project is left at whatever stage last persisted, with no error to show for
+   * it. Every stage writes its own output before the next begins, so re-entering skips what is
+   * already done and picks up from there; each call gets a fresh execution budget, and two or
+   * three hops finish a run that a single invocation could not.
+   */
+  async resumeDetached(project: Project): Promise<void> {
+    runDetached("PIPELINE-RESUME", () =>
+      this.run(project, project.userGoal, project.style, project.requestedDuration)
+    );
+  }
+
   /** Creates the project and awaits completion (tests / local tooling). */
   async execute(prompt: string, style: string, duration: number, budgetUSD?: number, ownerUid?: string): Promise<PipelineState> {
     const project = await this.store.createProject(this.initialProjectData(prompt, style, duration, budgetUSD, ownerUid));
@@ -124,7 +140,7 @@ export class ProductionPipeline {
 
   private async run(projectArg: Project, prompt: string, style: string, duration: number): Promise<PipelineState> {
     let project = projectArg;
-    let state: PipelineState = { stage: 'RESEARCH', projectId: project.id, logs: [] };
+    let state: PipelineState = { stage: 'RESEARCH', projectId: project.id, logs: [...(project.logs ?? [])] };
     this.emit(state);
 
     // Real spend ledger: LLM entries (Vertex) + later generation entries (AssetDirector)
@@ -149,61 +165,84 @@ export class ProductionPipeline {
 
     try {
       // 1. Research
-      const researchResult = await this.researchAgent.run(prompt);
-      state.research = researchResult.report;
-      state.researchEvidence = researchResult.evidence;
-      state.researchSearchIds = researchResult.searchIds;
-      track('ResearchAgent (Queries)', researchResult.queriesResult);
-      track('ResearchAgent (Synthesis)', researchResult.reportResult);
-      project = await this.store.updateProject(project.id, {
-        research: state.research, researchEvidence: state.researchEvidence,
-        researchSearchIds: state.researchSearchIds,
-        logs: state.logs, costLedger: ledger, status: 'RESEARCH_COMPLETE'
-      }) ?? project;
+      if (project.research) {
+        state.research = project.research;
+        state.researchEvidence = project.researchEvidence;
+        state.researchSearchIds = project.researchSearchIds;
+      } else {
+        const researchResult = await this.researchAgent.run(prompt);
+        state.research = researchResult.report;
+        state.researchEvidence = researchResult.evidence;
+        state.researchSearchIds = researchResult.searchIds;
+        track('ResearchAgent (Queries)', researchResult.queriesResult);
+        track('ResearchAgent (Synthesis)', researchResult.reportResult);
+        project = await this.store.updateProject(project.id, {
+          research: state.research, researchEvidence: state.researchEvidence,
+          researchSearchIds: state.researchSearchIds,
+          logs: state.logs, costLedger: ledger, status: 'RESEARCH_COMPLETE'
+        }) ?? project;
+      }
       state.stage = 'OPPORTUNITY'; this.emit(state);
 
       // 2. Opportunity
-      const oppResult = await this.opportunityAgent.run(state.research, prompt);
-      state.opportunity = oppResult.data;
-      track('OpportunityAgent', oppResult);
-      project = await this.store.updateProject(project.id, {
-        opportunity: state.opportunity, logs: state.logs, costLedger: ledger, status: 'OPPORTUNITY_COMPLETE'
-      }) ?? project;
+      if (project.opportunity) {
+        state.opportunity = project.opportunity;
+      } else {
+        const oppResult = await this.opportunityAgent.run(state.research, prompt);
+        state.opportunity = oppResult.data;
+        track('OpportunityAgent', oppResult);
+        project = await this.store.updateProject(project.id, {
+          opportunity: state.opportunity, logs: state.logs, costLedger: ledger, status: 'OPPORTUNITY_COMPLETE'
+        }) ?? project;
+      }
       state.stage = 'CREATIVE_DIRECTION'; this.emit(state);
 
       // 3 & 4. World Building
-      const wbResult = await this.worldBuilderAgent.run(state.opportunity, style, prompt);
-      state.worldBible = wbResult.data;
-      track('WorldBuilderAgent', wbResult);
-      project = await this.store.updateProject(project.id, {
-        worldBible: state.worldBible, title: state.worldBible.title,
-        logs: state.logs, costLedger: ledger, status: 'WORLD_COMPLETE'
-      }) ?? project;
+      if (project.worldBible) {
+        state.worldBible = project.worldBible;
+      } else {
+        const wbResult = await this.worldBuilderAgent.run(state.opportunity, style, prompt);
+        state.worldBible = wbResult.data;
+        track('WorldBuilderAgent', wbResult);
+        project = await this.store.updateProject(project.id, {
+          worldBible: state.worldBible, title: state.worldBible.title,
+          logs: state.logs, costLedger: ledger, status: 'WORLD_COMPLETE'
+        }) ?? project;
+      }
       state.stage = 'STORYBOARDING'; this.emit(state);
 
       // 5. Storyboarding
-      const sbResult = await this.storyboardAgent.run(state.worldBible, duration, prompt);
-      state.storyboard = sbResult.data;
-      track('StoryboardAgent', sbResult);
+      if (project.storyboard) {
+        state.storyboard = project.storyboard;
+      } else {
+        const sbResult = await this.storyboardAgent.run(state.worldBible, duration, prompt);
+        state.storyboard = sbResult.data;
+        track('StoryboardAgent', sbResult);
 
-      // The storyboard prompt demands the shot durations sum to the requested runtime, but an LLM
-      // doing arithmetic is a hope, not a guarantee — and every downstream cost estimate, Veo
-      // render length and final cut length is derived from these numbers. Reconcile deterministically
-      // rather than shipping a "15 second" film that runs 23 seconds.
-      state.storyboard = { ...state.storyboard, shots: reconcileShotDurations(state.storyboard.shots, duration) };
+        // The storyboard prompt demands the shot durations sum to the requested runtime, but an LLM
+        // doing arithmetic is a hope, not a guarantee — and every downstream cost estimate, Veo
+        // render length and final cut length is derived from these numbers. Reconcile deterministically
+        // rather than shipping a "15 second" film that runs 23 seconds.
+        state.storyboard = { ...state.storyboard, shots: reconcileShotDurations(state.storyboard.shots, duration) };
 
-      project = await this.store.updateProject(project.id, {
-        storyboard: state.storyboard, logs: state.logs, costLedger: ledger, status: 'STORYBOARD_COMPLETE'
-      }) ?? project;
+        project = await this.store.updateProject(project.id, {
+          storyboard: state.storyboard, logs: state.logs, costLedger: ledger, status: 'STORYBOARD_COMPLETE'
+        }) ?? project;
+      }
       state.stage = 'PRODUCTION_PLANNING'; this.emit(state);
 
       // 6. Production Planning
-      const ppResult = await this.productionPlannerAgent.run(state.storyboard);
-      state.productionPlan = ppResult.data;
-      track('ProductionPlannerAgent', ppResult);
-      await this.store.updateProject(project.id, {
-        productionPlan: state.productionPlan, logs: state.logs, costLedger: ledger, status: 'COMPLETED'
-      });
+      if (project.productionPlan) {
+        state.productionPlan = project.productionPlan;
+        await this.store.updateProject(project.id, { status: 'COMPLETED' });
+      } else {
+        const ppResult = await this.productionPlannerAgent.run(state.storyboard);
+        state.productionPlan = ppResult.data;
+        track('ProductionPlannerAgent', ppResult);
+        await this.store.updateProject(project.id, {
+          productionPlan: state.productionPlan, logs: state.logs, costLedger: ledger, status: 'COMPLETED'
+        });
+      }
       state.stage = 'COMPLETE'; this.emit(state);
 
     } catch (error: any) {

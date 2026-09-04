@@ -45,6 +45,7 @@ export const ProjectSchema = z.object({
   budgetUSD: z.number().optional(),
   research: ResearchReportSchema.optional(),
   researchEvidence: z.array(ResearchEvidenceSchema).optional(),
+  researchSearchIds: z.array(z.string()).optional(),
   opportunity: OpportunitySchema.optional(),
   worldBible: WorldBibleSchema.optional(),
   storyboard: StoryboardSchema.optional(),

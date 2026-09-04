@@ -15,7 +15,7 @@ export interface EngineModes {
   persistence?: string;
 }
 
-const LIVE = /^(VERTEX|GEMINI|VEO|PARALLEL|FIRESTORE|POLLINATIONS)$/i;
+const LIVE = /^(VERTEX|GEMINI|VEO|PARALLEL|FIRESTORE)$/i;
 const isLive = (v?: string) => !!v && LIVE.test(v);
 
 /**

@@ -71,7 +71,11 @@ export async function GET(req: NextRequest) {
     },
     admin,
     deep: deepResult,
-    vertexProject: resolveVertexConfig().projectId ? "set" : "MISSING",
+    // The resolved project id, not just its presence. When Vertex is pointed at a different
+    // Google Cloud project than Firebase, "set" cannot tell you whether the switch actually took
+    // effect — and a service account authenticating against the wrong project fails in a way that
+    // reads like a bad key. A project id is an identifier, not a credential.
+    vertexProject: resolveVertexConfig().projectId || "MISSING",
     env: {
       VERTEX_SERVICE_ACCOUNT_JSON: present("VERTEX_SERVICE_ACCOUNT_JSON"),
       FIREBASE_SERVICE_ACCOUNT_JSON: present("FIREBASE_SERVICE_ACCOUNT_JSON"),
@@ -82,6 +86,9 @@ export async function GET(req: NextRequest) {
       DODO_WEBHOOK_SECRET: present("DODO_WEBHOOK_SECRET"),
       RESEARCH_PROVIDER: process.env.RESEARCH_PROVIDER ?? "unset",
       IMAGE_PROVIDER: process.env.IMAGE_PROVIDER ?? "unset",
+      // Which Veo variant is billed. The fast variants cost materially less per second, so a
+      // deployment silently running the standard model is a budget problem, not just a config one.
+      VEO_MODEL: process.env.VEO_MODEL ?? "unset (defaults to veo-3.1-generate-001)",
       // Without a bucket, generated images and uploaded profile photos are written to local disk
       // and their /api/assets URIs cannot resolve anywhere else.
       NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "MISSING",

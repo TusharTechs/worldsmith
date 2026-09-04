@@ -15,6 +15,26 @@
 
 ---
 
+## For judges — run a full production free
+
+A complete 15-second production costs ~1,047 credits (three Veo clips, the stills behind them,
+narration, and eight campaign creatives). New accounts start with 15, which is enough to try the
+standalone tools but not the flagship pipeline. So there is a code for it:
+
+| | |
+|---|---|
+| **Code** | `JUDGE-3000` |
+| **Grants** | 3,000 credits — about three full 15-second productions |
+| **Where** | Sign in, then **Account → Redeem a code** (or the *Redeem* field on the pricing panel) |
+
+Then open **[/studio](https://worldsmith.vercel.app/studio)**, type an idea, and press **Build my
+world**. Research runs first — the **Research Signals** panel shows the live Parallel results and
+the `search_id` behind them before any frame exists.
+
+**Verify the stack without an account:** [`/api/health`](https://worldsmith.vercel.app/api/health)
+reports the resolved providers and the deployed commit. All of `RESEARCH_PROVIDER`,
+`IMAGE_PROVIDER` and the rest should read live services, never `mock`.
+
 ## The problem
 
 Every AI video tool gives you a clip. None of them give you a *production*.
@@ -44,10 +64,16 @@ Beyond the full pipeline, **11 standalone tools** work on their own — Text→I
 
 **Parallel Search is the first act of the pipeline**, not a bolt-on. Worldsmith's core claim — *"not a generator, a studio"* — depends on researching a real opportunity before a single frame is drawn. That research step is Parallel.
 
-- **The call:** [`parallel-research-provider.ts:16`](src/providers/parallel-research-provider.ts#L16) — `POST /v1beta/search` against [`https://api.parallel.ai`](src/providers/parallel-research-provider.ts#L10), at runtime
+- **The call:** [`parallel-research-provider.ts:57`](src/providers/parallel-research-provider.ts#L57) — `POST /v1/search` against [`https://api.parallel.ai`](src/providers/parallel-research-provider.ts#L57), authenticated with `x-api-key`, at runtime
 - **Wired in:** [`research-factory.ts:8`](src/providers/research-factory.ts#L8) — selected whenever `RESEARCH_PROVIDER` is not `mock` and a key is present
-- **Invoked by the pipeline:** [`orchestrator.ts:151`](src/core/orchestrator.ts#L151) — the first stage of every production, before any frame is drawn
-- **Proof at runtime:** the Studio's **Research Signals** panel renders live results with source citations, and the header badge reads `RESEARCH · PARALLEL` straight from resolved config
+- **Invoked by the pipeline:** [`orchestrator.ts:152`](src/core/orchestrator.ts#L152) — the first stage of every production, before any frame is drawn
+- **Steered by the run, not by a constant:** every run's `objective` is built from the user's own goal ([`research-agent.ts:41`](src/agents/research-agent.ts#L41)) and all planned queries go out in one batched `search_queries` call — so two different ideas genuinely research two different things
+- **Proof at runtime:** the Studio's **Research Signals** panel renders each result's retrieved excerpt beside its source link, and prints Parallel's own `search_id` for the run — the evidence is traceable back to the exact upstream call. The header badge reads `RESEARCH · PARALLEL` straight from resolved config.
+
+Every claim the research report makes is filtered back against the retrieved evidence
+([`research-agent.ts:69`](src/agents/research-agent.ts#L69)): a source the model did not actually
+receive is dropped rather than displayed. Evidence text is fenced and marked untrusted in the
+synthesis prompt, so a page that tries to give the agent instructions is treated as data.
 
 ## Google Cloud
 
@@ -72,8 +98,24 @@ All six model providers construct their client as `new GoogleGenAI({ vertexai: t
 
 ```bash
 grep -rn "vertexai: true" src/providers/     # every Vertex client construction
-grep -rn "parallel.ai\|v1beta/search" src/providers/   # the Parallel Search call
+grep -rn "parallel.ai\|v1/search" src/providers/      # the Parallel Search call
 ```
+
+
+### On Agent Builder
+
+The agent network runs on **Vertex AI** — the platform Agent Builder itself is built on — driven
+through the `@google/genai` SDK, with orchestration, schema-validated handoffs, the QC gate and
+the cost ledger implemented directly in [`src/core/orchestrator.ts`](src/core/orchestrator.ts)
+rather than delegated to the ADK runtime.
+
+That was a deliberate call, and it is worth being straight about. Three of this pipeline's
+properties are things a generic agent runtime does not give you: shot durations are reconciled
+*deterministically* against the requested runtime rather than trusted to a model's arithmetic;
+continuity QC is a **gate** that can send a shot back, not a report appended after the fact; and
+credits are **reserved before** a provider is called and refunded when it produces nothing. Each
+one needs control over the loop between agent steps. Every model call underneath is still Gemini
+on Vertex AI, and nothing else.
 
 ## Screenshots
 
@@ -82,6 +124,11 @@ grep -rn "parallel.ai\|v1beta/search" src/providers/   # the Parallel Search cal
 | ![Landing](docs/screenshots/01-landing.png) **Landing** | ![Studio](docs/screenshots/02-studio-pipeline.png) **Studio — the production console** |
 | ![Pipeline](docs/screenshots/03-parallel-signals.png) **The loop — Parallel signals through to distribution** | ![Assets](docs/screenshots/04-asset-gallery.png) **Every asset, autonomously produced** |
 | ![Tools](docs/screenshots/05-text-to-image.png) **Text → Image** | ![Social](docs/screenshots/06-distribution.png) **Social posts, in native platform sizes** |
+
+## Demo video
+
+<!-- TODO: replace with the YouTube/Vimeo link before submitting. The header links here. -->
+*Link to be added — a 3-minute walkthrough of one idea going in and a finished campaign coming out.*
 
 ## Architecture
 

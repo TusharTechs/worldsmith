@@ -1,5 +1,5 @@
 import { ResearchEvidence } from "@/core/research-schemas";
-import { ResearchProvider } from "./research-provider";
+import { ResearchProvider, ResearchGathering } from "./research-provider";
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "signal";
@@ -13,7 +13,7 @@ const EVERGREEN_EVIDENCE: ResearchEvidence[] = [
 export class MockResearchProvider implements ResearchProvider {
   mode = "MOCK" as const;
 
-  async gatherEvidence(queries: string[]): Promise<ResearchEvidence[]> {
+  async gatherEvidence(queries: string[]): Promise<ResearchGathering> {
     await new Promise((r) => setTimeout(r, 700));
     const now = new Date().toISOString();
     const perQuery: ResearchEvidence[] = queries.map((q) => ({
@@ -24,6 +24,8 @@ export class MockResearchProvider implements ResearchProvider {
       retrievedAt: now,
       publishedAt: now,
     }));
-    return [...perQuery, ...EVERGREEN_EVIDENCE];
+    // No searchIds: mock mode has no upstream call to trace, and inventing an id here would
+    // put a fabricated provenance token in front of the user.
+    return { evidence: [...perQuery, ...EVERGREEN_EVIDENCE], searchIds: [] };
   }
 }

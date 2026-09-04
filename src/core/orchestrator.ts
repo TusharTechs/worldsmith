@@ -10,6 +10,7 @@ import { WorldBuilderAgent } from '@/agents/world-builder-agent';
 import { StoryboardAgent } from '@/agents/storyboard-agent';
 import { ProductionPlannerAgent } from '@/agents/production-planner-agent';
 import { ProjectStore } from '@/store/project-store';
+import { runDetached } from "@/lib/detached";
 
 export type PipelineStage =
   | 'IDLE' | 'RESEARCH' | 'OPPORTUNITY' | 'CREATIVE_DIRECTION'
@@ -22,6 +23,8 @@ export interface PipelineState {
   error?: string;
   research?: ResearchReport;
   researchEvidence?: ResearchEvidence[];
+  /** Parallel's own ids for the searches behind this run's evidence. Empty in mock mode. */
+  researchSearchIds?: string[];
   opportunity?: Opportunity;
   worldBible?: WorldBible;
   storyboard?: Storyboard;
@@ -93,12 +96,10 @@ export class ProductionPipeline {
     this.listeners.forEach(l => l(state));
   }
 
-  /** Creates the project and kicks off a DETACHED run (server-side fire-and-forget). */
+  /** Creates the project and kicks off a background run that outlives the response. */
   async start(prompt: string, style: string, duration: number, budgetUSD?: number, ownerUid?: string): Promise<string> {
     const project = await this.store.createProject(this.initialProjectData(prompt, style, duration, budgetUSD, ownerUid));
-    void this.run(project, prompt, style, duration).catch((e) =>
-      console.error("[PIPELINE] detached run failed:", e)
-    );
+    runDetached("PIPELINE", () => this.run(project, prompt, style, duration));
     return project.id;
   }
 
@@ -151,10 +152,12 @@ export class ProductionPipeline {
       const researchResult = await this.researchAgent.run(prompt);
       state.research = researchResult.report;
       state.researchEvidence = researchResult.evidence;
+      state.researchSearchIds = researchResult.searchIds;
       track('ResearchAgent (Queries)', researchResult.queriesResult);
       track('ResearchAgent (Synthesis)', researchResult.reportResult);
       project = await this.store.updateProject(project.id, {
         research: state.research, researchEvidence: state.researchEvidence,
+        researchSearchIds: state.researchSearchIds,
         logs: state.logs, costLedger: ledger, status: 'RESEARCH_COMPLETE'
       }) ?? project;
       state.stage = 'OPPORTUNITY'; this.emit(state);

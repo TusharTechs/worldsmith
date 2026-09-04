@@ -16,6 +16,7 @@ import { createAudioProvider, audioProviderMode } from "@/providers/audio-factor
 import { verifyUser, spendCredits } from "@/store/credits-store";
 import { estimateCredits } from "@/core/credits";
 import { requireProjectOwner } from "@/app/actions/project-auth";
+import { runDetached } from "@/lib/detached";
 
 export async function serverBuildGenerationPlan(idToken: string, projectId: string, budgetUSD?: number): Promise<GenerationPlan> {
   const { store, project } = await requireProjectOwner(idToken, projectId);
@@ -34,9 +35,7 @@ export async function serverApproveAndGenerate(idToken: string, projectId: strin
   // Check affordability here, while we can still surface the error to the user.
   await director.assertCanAfford(estimateCredits("image"));
   await director.savePlan(projectId, fresh);
-  void director.executePlan(projectId, fresh, budgetUSD).catch((e) =>
-    console.error("[ASSET DIRECTOR] detached execution failed:", e)
-  );
+  runDetached("ASSET DIRECTOR", () => director.executePlan(projectId, fresh, budgetUSD));
 }
 
 export async function serverRetryAsset(idToken: string, projectId: string, assetId: string, budgetUSD?: number): Promise<void> {
@@ -67,7 +66,7 @@ export async function serverResetStuckGeneration(idToken: string, projectId: str
   }
 }
 
-export async function serverGetImageMode(): Promise<"GEMINI" | "VERTEX" | "POLLINATIONS" | "MOCK"> {
+export async function serverGetImageMode(): Promise<"GEMINI" | "VERTEX" | "MOCK"> {
   return imageProviderMode();
 }
 
@@ -77,9 +76,7 @@ export async function serverGenerateVideos(idToken: string, projectId: string, b
   // Same pre-flight as the image run — a Veo clip is the priciest unit in the product, so an
   // account that can't cover one should be told before the run detaches.
   await director.assertCanAfford(estimateCredits("videoPerSecond", 5));
-  void director.generateVideos(projectId, budgetUSD).catch((e) =>
-    console.error("[ASSET DIRECTOR] video run failed:", e)
-  );
+  runDetached("ASSET DIRECTOR", () => director.generateVideos(projectId, budgetUSD));
 }
 
 export async function serverGetVideoMode(): Promise<string> {

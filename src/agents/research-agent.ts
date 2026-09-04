@@ -6,6 +6,8 @@ import { ResearchProvider } from "@/providers/research-provider";
 export interface ResearchResult {
   report: ResearchReport;
   evidence: ResearchEvidence[];
+  /** Provider-side ids for the searches behind this evidence. Empty in mock mode. */
+  searchIds: string[];
   queriesResult: LLMGenerationResult<any>;
   reportResult: LLMGenerationResult<any>;
 }
@@ -33,8 +35,15 @@ export class ResearchAgent {
       SearchQueriesSchema
     );
 
-    // 2. Gather traceable evidence
-    const evidence = await this.researchProvider.gatherEvidence(queriesResult.data.queries);
+    // 2. Gather traceable evidence.
+    //
+    // The objective is derived from the user's actual goal rather than being a fixed string.
+    // Parallel ranks against the objective as well as the queries, so a generic objective
+    // quietly flattens every run's research toward the same generic sources.
+    const { evidence, searchIds } = await this.researchProvider.gatherEvidence(
+      queriesResult.data.queries,
+      `Find current trending topics, recent news, and audience signals that inform this content goal: "${userGoal}".`
+    );
     if (evidence.length === 0) {
       throw new Error(`[${this.researchProvider.mode}] Research provider returned no evidence.`);
     }
@@ -59,6 +68,7 @@ export class ResearchAgent {
     return { 
       report: enforceTraceability(reportResult.data, evidence), 
       evidence,
+      searchIds,
       queriesResult,
       reportResult
     };

@@ -124,6 +124,7 @@ function mapProjectToState(p: Project): UIState {
     error: p.error,
     research: p.research,
     researchEvidence: p.researchEvidence,
+    researchSearchIds: p.researchSearchIds,
     opportunity: p.opportunity,
     worldBible: p.worldBible,
     storyboard: p.storyboard,
@@ -792,6 +793,13 @@ export default function StudioDashboard() {
                     <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-cyan-400">
                       <span className="h-1 w-1 rounded-full bg-cyan-400" />
                       via {researchMode}
+                      {/* The upstream search id, so a run can be traced back to the exact
+                          Parallel call that produced its evidence. Mock mode has none. */}
+                      {state.researchSearchIds?.[0] && (
+                        <span className="ml-1 truncate text-zinc-600 normal-case" title={state.researchSearchIds.join(", ")}>
+                          {state.researchSearchIds[0]}
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="grid gap-2.5">
@@ -817,8 +825,18 @@ export default function StudioDashboard() {
                                   </span>
                                 ) : (
                                   <a href={s.url} target="_blank" rel="noreferrer"
-                                    className="block truncate text-[11px] text-zinc-500 transition-colors hover:text-cyan-300">
-                                    ↗ {s.title}
+                                    className="group block rounded-lg px-2 py-1.5 -mx-2 transition-colors hover:bg-white/[0.03]">
+                                    <span className="block truncate text-[11px] text-zinc-500 transition-colors group-hover:text-cyan-300">
+                                      ↗ {s.title}
+                                    </span>
+                                    {/* The retrieved passage itself. This is what the synthesis
+                                        step actually reasoned over, so showing it is the
+                                        difference between a citation and a claim of one. */}
+                                    {s.snippet && (
+                                      <span className="mt-0.5 line-clamp-2 block text-[11px] leading-relaxed text-zinc-600">
+                                        {s.snippet}
+                                      </span>
+                                    )}
                                   </a>
                                 )}
                               </li>

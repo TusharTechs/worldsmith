@@ -25,7 +25,7 @@ standalone tools but not the flagship pipeline. So there is a code for it:
 |---|---|
 | **Code** | `JUDGE2026` |
 | **Grants** | 1,200 credits — one full 15-second production, with room for a retry |
-| **Where** | Sign in, then **Account → Redeem a code** (or the *Redeem* field on the pricing panel) |
+| **Where** | Sign in, then paste it into **“Got a code?”** at the bottom of the [pricing section](https://worldsmith.vercel.app/#pricing) and press *Redeem*. Also available under **Manage account → Subscription**. |
 
 Then open **[/studio](https://worldsmith.vercel.app/studio)**, type an idea, and press **Build my
 world**. Research runs first — the **Research Signals** panel shows the live Parallel results and
